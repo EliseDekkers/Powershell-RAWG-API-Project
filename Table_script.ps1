@@ -1,6 +1,6 @@
 # RAWG API Key en basis URL voor API-aanroep
-$rawgKey = "jouw_api_rawg_key"
-$url = "https://api.rawg.io/games?key=$rawgKey"
+$rawgKey = "66d6d395fad240b7805b15fca5779ffe"
+$url = "https://api.rawg.io/api/games?token&key=$rawgKey"
 
 # Stel de headers in voor de API-aanroep
 $headers = @{ "X-Api-Key" = $rawgKey }
@@ -53,7 +53,7 @@ function Show-GamesTable {
     $sortedGames = Sort-Games -games $games -sortBy $sortBy
 
     # Vraag de gebruiker welke kolommen ze willen zien
-    $columns = Read-Host "Welke kolommen wil je zien? (GameId, Name, Rating, Playtime)"
+    $columns = Read-Host "Welke kolommen wil je zien? (id, name, rating, released, playtime)"
 
     # Splits de kolommen die de gebruiker heeft ingevoerd
     $columnsArray = $columns.Split(",") | ForEach-Object { $_.Trim() }
@@ -63,11 +63,11 @@ function Show-GamesTable {
 }
 
 # Vraag de gebruiker om de minimale en maximale rating
-$minRating = Read-Host "Geef de minimale rating (standaard 3)"
+$minRating = Read-Host "Geef de minimale rating (standaard 1)"
 $maxRating = Read-Host "Geef de maximale rating (standaard 5)"
 
 # Zet standaardwaarde in als de gebruiker geen invoer geeft
-if (-not $minRating) { $minRating = 3 }
+if (-not $minRating) { $minRating = 1 }
 if (-not $maxRating) { $maxRating = 5 }
 
 # Vraag de gebruiker om de kolom waarop gesorteerd moet worden (rating of playtime)
