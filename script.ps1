@@ -69,7 +69,7 @@ function Expand-GameData {
     }
 }
 
-# Functie om beschikbare velden weer te geven en selectie te vergemakkelijken
+# Functie om iteratief velden te selecteren
 function Get-FieldSelection {
     $fields = @{
         1  = "ID"
@@ -98,12 +98,38 @@ function Get-FieldSelection {
     Write-Host "`nBeschikbare velden:"
     $fields.GetEnumerator() | Sort-Object Key | Format-Table -Property Key, Value -AutoSize
 
-    # Vraag gebruiker om selectie
-    $selectedNumbers = Read-Host "Voer de nummers in van de gewenste velden (gescheiden door komma's)"
-    $selectedFields = $selectedNumbers -split "," | ForEach-Object { $fields[[int]$_] }
+    # Iteratief velden selecteren
+    $selectedFields = @()
+    while ($selectedFields.Count -lt 5) {
+        $input = Read-Host "Voer een nummer in om een veld toe te voegen (of type 'stop' om te stoppen)"
+
+        if ($input -eq "stop") {
+            break
+        }
+
+        # Controleer of de invoer geldig is
+        if ($fields.ContainsKey([int]$input)) {
+            $field = $fields[[int]$input]
+
+            if ($selectedFields -contains $field) {
+                Write-Host "Dit veld is al toegevoegd."
+            } else {
+                $selectedFields += $field
+                Write-Host "Veld '$field' toegevoegd."
+            }
+        } else {
+            Write-Host "Ongeldig nummer. Probeer opnieuw."
+        }
+    }
+
+    if ($selectedFields.Count -eq 0) {
+        Write-Host "Geen velden geselecteerd. Standaardveld 'Name' wordt gebruikt."
+        $selectedFields = @("Name")
+    }
 
     return $selectedFields
 }
+
 
 # Functie voor interactieve tabel- of gridweergave
 function Show-GamesView {

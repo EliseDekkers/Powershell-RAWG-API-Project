@@ -1,4 +1,29 @@
-# Toon velden in tabelvorm
+# Functie om iteratief velden te selecteren
+function Get-FieldSelection {
+    $fields = @{
+        1  = "ID"
+        2  = "Name"
+        3  = "Released"
+        4  = "Playtime"
+        5  = "Rating"
+        6  = "Rating_top"
+        7  = "Ratings_count"
+        8  = "Reviews_count"
+        9  = "Added"
+        10 = "Status_yet"
+        11 = "Status_owned"
+        12 = "Status_beaten"
+        13 = "Status_toplay"
+        14 = "Status_dropped"
+        15 = "Status_playing"
+        16 = "Genres"
+        17 = "Tags"
+        18 = "ESRB_Rating"
+        19 = "Metacritic"
+        20 = "Suggestions_Count"
+    }
+
+    # Toon velden in tabelvorm
     Write-Host "`nBeschikbare velden:"
     $fields.GetEnumerator() | Sort-Object Key | Format-Table -Property Key, Value -AutoSize
 
@@ -33,30 +58,3 @@
 
     return $selectedFields
 }
-
-# Functie voor interactieve tabel- of gridweergave
-function Show-GamesView {
-    param(
-        [string]$viewType = "table"  # Kies: 'table' voor Format-Table of 'grid' voor Out-GridView
-    )
-
-    # Geneste gegevens uitbreiden
-    $expandedGames = Expand-GameData
-
-    # Vraag gebruiker om velden te selecteren
-    $columns = Get-FieldSelection
-
-    if ($viewType -eq "grid") {
-        # Out-GridView weergeven
-        $expandedGames | Select-Object $columns | Out-GridView -Title "Games View"
-    } else {
-        # Format-Table weergeven
-        $expandedGames | Select-Object $columns | Format-Table -AutoSize
-    }
-}
-
-# Vraag de gebruiker welke weergave ze willen gebruiken
-$viewType = Read-Host "Wil je een tabel (table) of grid (grid) weergave?"
-
-# Roep de functie aan om de gegevens te tonen
-Show-GamesView -viewType $viewType
