@@ -32,24 +32,55 @@ Write-Host "Totaal aantal verzamelde games: $($allResults.Count)"
 
 # Functie om geneste gegevens op te splitsen voor gebruik in tabel/grid
 function Expand-GameData {
+    # Breid de gegevens in $allResults uit
     $allResults | ForEach-Object {
-        $game=$_
-        $tags=$allResults.tags | ForEach-Object { $_.name }
-        $platforms=$allResults.platforms | ForEach-Object { $_.name }
         [PSCustomObject]@{
-            ID                = $game.id
-            Name              = $game.name
-            Released          = $game.released
-            Playtime          = $game.playtime
-            Rating            = $game.rating
-            RatingTop         = $game.ratingtop
-            Tags              = $tags
-            ESRB_Rating       = $game.esrb_rating
-            Platforms         = $platforms
-            Metacritic        = $game.metacritic
-            Suggestions_Count = $game.suggestions_count
+            ID                = $_.id
+            Name              = $_.name
+            Released          = $_.released
+            Playtime          = $_.playtime
+            Rating            = $_.rating
+            Rating_top        = $_.rating_top
+            Ratings_count     = $_.ratings_count
+            Reviews_count     = $_.reviews_count
+            Added             = $_.added
+            Genres            = ($_.genres | ForEach-Object { $_.name }) -join ", "
+            Tags              = ($_.tags | ForEach-Object { $_.name }) -join ", "
+            ESRB_Rating       = $_?.esrb_rating?.name
+            Metacritic        = $_.metacritic
+            Suggestions_Count = $_.suggestions_count
         }
     }
+}
+
+# Functie om beschikbare velden weer te geven en selectie te vergemakkelijken
+function Get-FieldSelection {
+    $fields = @{
+        1  = "ID"
+        2  = "Name"
+        3  = "Released"
+        4  = "Playtime"
+        5  = "Rating"
+        6  = "Rating_top"
+        7  = "Ratings_count"
+        8  = "Reviews_count"
+        9  = "Added"
+        10 = "Genres"
+        11 = "Tags"
+        12 = "ESRB_Rating"
+        13 = "Metacritic"
+        14 = "Suggestions_Count"
+    }
+
+    # Toon velden in tabelvorm
+    Write-Host "`nBeschikbare velden:"
+    $fields.GetEnumerator() | Sort-Object Key | Format-Table -Property Key, Value -AutoSize
+
+    # Vraag gebruiker om selectie
+    $selectedNumbers = Read-Host "Voer de nummers in van de gewenste velden (gescheiden door komma's)"
+    $selectedFields = $selectedNumbers -split "," | ForEach-Object { $fields[[int]$_] }
+
+    return $selectedFields
 }
 
 # Functie voor interactieve tabel- of gridweergave
@@ -61,33 +92,15 @@ function Show-GamesView {
     # Geneste gegevens uitbreiden
     $expandedGames = Expand-GameData
 
-    # Vraag de gebruiker welke velden ze willen zien
-    $columns = Read-Host "Welke velden wil je zien? (bijv. id, name, released, rating, ratingtop, tags, esrb_rating, platforms, metacritic, suggestions_count)"
-
-    # Splits de kolomnamen en filter de gegevens
-    $columnsArray = $columns.Split(",") | ForEach-Object { $_.Trim() }
-
-    # Vraag de gebruiker om het veld waarop ze willen sorteren
-    $sortField = Read-Host "Op welk veld wil je sorteren? (bijv. rating, playtime, metacritic)"
-    if (-not $sortField) { $sortField = "rating" }  # Standaardwaarde als niets wordt opgegeven
-
-    # Vraag de gebruiker om de sorteervolgorde
-    $sortOrder = Read-Host "Wil je sorteren oplopend (asc) of aflopend (desc)?"
-    $descending = $sortOrder -eq "desc"
-
-    # Sorteer de gegevens
-    $sortedGames = if ($descending) {
-        $expandedGames | Sort-Object -Property $sortField -Descending
-    } else {
-        $expandedGames | Sort-Object -Property $sortField
-    }
+    # Vraag gebruiker om velden te selecteren
+    $columns = Get-FieldSelection
 
     if ($viewType -eq "grid") {
         # Out-GridView weergeven
-        $sortedGames | Select-Object $columnsArray | Out-GridView -Title "Games View"
+        $expandedGames | Select-Object $columns | Out-GridView -Title "Games View"
     } else {
         # Format-Table weergeven
-        $sortedGames | Select-Object $columnsArray | Format-Table -AutoSize
+        $expandedGames | Select-Object $columns | Format-Table -AutoSize
     }
 }
 
