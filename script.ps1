@@ -1,17 +1,40 @@
-# RAWG API Key en basis URL voor API-aanroep
+# RAWG API Key
 $rawgKey = "66d6d395fad240b7805b15fca5779ffe"
-$url = "https://api.rawg.io/api/games?key=$rawgKey"
 
-# Haal de gegevens op van de RAWG API
-$response = Invoke-RestMethod -Uri $url
+# Variabelen voor paginatie
+$allResults = @()  # Array om alle resultaten op te slaan
+$page = 1  # Begin bij pagina 1
+$maxPages = 10  # Maximaal aantal pagina's
+$moreResults = $true  # Vlag om te controleren of er meer resultaten zijn
 
-# Functie om geneste gegevens op te splitsen voor gebruik in de tabel of grid
+# Loop door de pagina's totdat we $maxPages pagina's hebben opgehaald of geen meer resultaten zijn
+while ($moreResults -and $page -le $maxPages) {
+    # Maak de API-aanroep met de huidige pagina
+    $url = "https://api.rawg.io/api/games?key=$rawgKey&page=$page"
+    $response = Invoke-RestMethod -Uri $url
+
+    # Voeg de resultaten van deze pagina toe aan de array
+    $allResults += $response.results
+
+    # Controleer of er meer resultaten zijn
+    # Als het aantal resultaten op deze pagina minder dan 20 is, weten we dat we klaar zijn
+    if ($response.results.Count -lt 20) {
+        $moreResults = $false  # Geen extra pagina's nodig
+    } else {
+        $page++  # Ga naar de volgende pagina
+    }
+
+    # Laat zien hoeveel resultaten we tot nu toe hebben verzameld
+    Write-Host "Aantal verzamelde games tot nu toe: $($allResults.Count)"
+}
+
+# Bekijk het totale aantal verzamelde resultaten
+Write-Host "Totaal aantal verzamelde games: $($allResults.Count)"
+
+# Functie om geneste gegevens op te splitsen voor gebruik in tabel/grid
 function Expand-GameData {
-    param(
-        [array]$games
-    )
-
-    $games | ForEach-Object {
+    # Breid de gegevens in $allResults uit
+    $allResults | ForEach-Object {
         [PSCustomObject]@{
             ID                = $_.id
             Name              = $_.name
@@ -34,7 +57,7 @@ function Show-GamesView {
     )
 
     # Geneste gegevens uitbreiden
-    $expandedGames = Expand-GameData -games $response.results
+    $expandedGames = Expand-GameData
 
     # Vraag de gebruiker welke velden ze willen zien
     $columns = Read-Host "Welke velden wil je zien? (bijv. ID, Name, Released, Rating, Tags, ESRB_Rating, Platforms)"
