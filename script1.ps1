@@ -33,18 +33,21 @@ Write-Host "Totaal aantal verzamelde games: $($allResults.Count)"
 # Functie om geneste gegevens op te splitsen voor gebruik in tabel/grid
 function Expand-GameData {
     $allResults | ForEach-Object {
+        $game=$_
+        $tags=$allResults.tags | ForEach-Object { $_.name }
+        $platforms=$allResults.platforms | ForEach-Object { $_.name }
         [PSCustomObject]@{
-            ID                = $_.id
-            Name              = $_.name
-            Released          = $_.released
-            Playtime          = $_.playtime
-            Rating            = $_.rating
-            RatingTop         = $_.rating_top
-            Tags              = ($_.tags | ForEach-Object { $_.name }) -join ", "
-            ESRB_Rating       = $_?.esrb_rating?.name
-            Platforms         = ($_.platforms | ForEach-Object { $_.platform?.name }) -join ", "
-            Metacritic        = $_.metacritic
-            Suggestions_Count = $_.suggestions_count
+            ID                = $game.id
+            Name              = $game.name
+            Released          = $game.released
+            Playtime          = $game.playtime
+            Rating            = $game.rating
+            RatingTop         = $game.ratingtop
+            Tags              = $tags
+            ESRB_Rating       = $game.esrb_rating
+            Platforms         = $platforms
+            Metacritic        = $game.metacritic
+            Suggestions_Count = $game.suggestions_count
         }
     }
 }
