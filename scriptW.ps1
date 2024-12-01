@@ -6,7 +6,7 @@ $allResults = @()  # Array om alle resultaten op te slaan
 $page = 1  # Begin bij pagina 1
 $maxPages = 10  # Maximaal aantal pagina's
 $moreResults = $true  # Vlag om te controleren of er meer resultaten zijn
-$maxRecords = Read-Host "Voer het maximaal aantal gegevens in (maximaal 200)"
+$maxRecords = Read-Host "Voer het maximaal aantal gegevens in (minimum 20 en maximaal 200)"
 
 if ([int]$maxRecords -gt 200) {
     Write-Host "Maximaal aantal gegevens is 200. Het aantal wordt aangepast naar 200."
@@ -56,7 +56,6 @@ function Expand-GameData {
             Released          = $game.released
             Playtime          = $game.playtime
             Rating            = $game.rating
-            Rating_top        = $game.rating_top
             Ratings_count     = $game.ratings_count
             Reviews_count     = $game.reviews_count
             Added             = $game.added
@@ -83,27 +82,28 @@ function Get-FieldSelection {
         3  = "Released"
         4  = "Playtime"
         5  = "Rating"
-        6  = "Rating_top"
-        7  = "Ratings_count"
-        8  = "Reviews_count"
-        9  = "Added"
-        10 = "Status_yet"
-        11 = "Status_owned"
-        12 = "Status_beaten"
-        13 = "Status_toplay"
-        14 = "Status_dropped"
-        15 = "Status_playing"
-        16 = "Genres"
-        17 = "Tags"
-        18 = "ESRB_Rating"
-        19 = "Metacritic"
-        20 = "Suggestions_Count"
+        6  = "Ratings_count"
+        7  = "Reviews_count"
+        8  = "Added"
+        9 = "Status_yet"
+        10 = "Status_owned"
+        11 = "Status_beaten"
+        12 = "Status_toplay"
+        13 = "Status_dropped"
+        14 = "Status_playing"
+        15 = "Genres"
+        16 = "Tags (Beperkt de leesbaarheid door de vele waardes in een tabel, hierdoor wordt de iteratie na deze selectie stopgezet)"
+        17 = "ESRB_Rating"
+        18 = "Metacritic"
+        19 = "Suggestions_Count"
     }
 
     # Toon velden in tabelvorm
     Write-Host "`nBeschikbare velden:"
-    $fields.GetEnumerator() | Sort-Object Key | Format-Table -Property Key, Value -AutoSize
-
+    $fields.GetEnumerator() | Sort-Object Key | ForEach-Object {
+        Write-Host "$($_.Key)`t$($_.Value)"
+    }
+    
     # Iteratief velden selecteren
     $selectedFields = @()
     while ($selectedFields.Count -lt 5) {
@@ -112,6 +112,16 @@ function Get-FieldSelection {
         if ($input -eq "stop") {
             break
         }
+
+        if ($field.ContainsKey([int]$input)) {
+            $field =$fields[[int]$input]
+
+            # Stop iteratie als "Tags" wordt geselecteerd
+            if ($field -eq "Tags") {
+                Write-Host "Tags geselecteerd. De iteratie wordt gestopt."
+                $selectedFields += $field
+                break
+            }
 
         # Controleer of de invoer geldig is
         if ($fields.ContainsKey([int]$input)) {
@@ -157,6 +167,17 @@ function Show-GamesView {
         Write-Host "Ongeldig veld voor sortering. Gegevens worden niet gesorteerd."
         $sortedGames = $expandedGames
     }
+
+    # Vraag de gebruiker hoeveel resultaten ze willen zien
+    $displayCount = Read-Host "Hoeveel resultaten wil je weergeven (max $maxRecords)?"
+
+    if ([int]$displayCount -gt $maxRecords) {
+        Write-Host "Aantal weergegeven resultaten wordt beperkt tot $maxRecords."
+        $displayCount = $maxRecords
+    }
+
+    # Beperk het aantal weergegeven resultaten
+    $sortedGames = $sortedGames | Select-Object -First $displayCount
 
     if ($viewType -eq "grid") {
         # Out-GridView weergeven
