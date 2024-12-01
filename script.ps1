@@ -19,6 +19,7 @@ function Sort-Games {
     return $games
 }
 
+
 # Functie voor het selecteren van velden en het toepassen van sorteren
 function Get-SortedGames {
     $fields = @{
