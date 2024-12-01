@@ -10,7 +10,7 @@ $moreResults = $true  # Vlag om te controleren of er meer resultaten zijn
 # Loop door de pagina's totdat we $maxPages pagina's hebben opgehaald of geen meer resultaten zijn
 while ($moreResults -and $page -le $maxPages) {
     # Maak de API-aanroep met de huidige pagina
-    $url = "https://api.rawg.io/api/games?key=$rawgKey&page=$page"
+    $url = "https://api.rawg.io/api/games?token&key=$rawgKey&page=$page"
     $response = Invoke-RestMethod -Uri $url
 
     # Voeg de resultaten van deze pagina toe aan de array
@@ -35,17 +35,21 @@ Write-Host "Totaal aantal verzamelde games: $($allResults.Count)"
 function Expand-GameData {
     # Breid de gegevens in $allResults uit
     $allResults | ForEach-Object {
+        $game=$_
+        $tags=$allResults.tags | ForEach-Object { $_.name }
+        $platforms=$allResults.platforms | ForEach-Object { $_.name }
         [PSCustomObject]@{
-            ID                = $_.id
-            Name              = $_.name
-            Released          = $_.released
-            Playtime          = $_.playtime
-            Rating            = $_.rating
-            Tags              = ($_?.tags | ForEach-Object { $_.name }) -join ", "
-            ESRB_Rating       = $_?.esrb_rating?.name
-            Platforms         = ($_?.platforms | ForEach-Object { $_.platform?.name }) -join ", "
-            Metacritic        = $_.metacritic
-            Suggestions_Count = $_.suggestions_count
+            ID                = $game.id
+            Name              = $game.name
+            Released          = $game.released
+            Playtime          = $game.playtime
+            Rating            = $game.rating
+            RatingTop         = $game.ratingtop
+            Tags              = $tags
+            ESRB_Rating       = $game.esrb_rating
+            Platforms         = $platforms
+            Metacritic        = $game.metacritic
+            Suggestions_Count = $game.suggestions_count
         }
     }
 }
@@ -60,7 +64,7 @@ function Show-GamesView {
     $expandedGames = Expand-GameData
 
     # Vraag de gebruiker welke velden ze willen zien
-    $columns = Read-Host "Welke velden wil je zien? (bijv. ID, Name, Released, Rating, Tags, ESRB_Rating, Platforms)"
+    $columns = Read-Host "Welke velden wil je zien? (bijv. id, name, released, rating, ratingtop, tags, esrb_rating, platforms, metacritic,suggestions_count)"
 
     # Splits de kolomnamen en filter de gegevens
     $columnsArray = $columns.Split(",") | ForEach-Object { $_.Trim() }
