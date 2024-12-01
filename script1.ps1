@@ -34,21 +34,37 @@ Write-Host "Totaal aantal verzamelde games: $($allResults.Count)"
 function Expand-GameData {
     # Breid de gegevens in $allResults uit
     $allResults | ForEach-Object {
+        $game=$_
+        $status_yet=$allResults.added_by_status | ForEach-Object { $_.yet }
+        $status_owned=$allResults.added_by_status | ForEach-Object { $_.owned }
+        $status_beaten=$allResults.added_by_status | ForEach-Object { $_.beaten }
+        $status_toplay=$allResults.added_by_status | ForEach-Object { $_.toplay }
+        $status_dropped=$allResults.added_by_status | ForEach-Object { $_.dropped }
+        $status_playing=$allResults.added_by_status | ForEach-Object { $_.playing }
+        $genres=$allResults.genres | ForEach-Object { $_.name }
+        $tags=$allResults.tags | ForEach-Object { $_.name }
+        $esrb_rating=$allResults.esrb_rating | ForEach-Object { $_.name }
         [PSCustomObject]@{
-            ID                = $_.id
-            Name              = $_.name
-            Released          = $_.released
-            Playtime          = $_.playtime
-            Rating            = $_.rating
-            Rating_top        = $_.rating_top
-            Ratings_count     = $_.ratings_count
-            Reviews_count     = $_.reviews_count
-            Added             = $_.added
-            Genres            = ($_.genres | ForEach-Object { $_.name }) -join ", "
-            Tags              = ($_.tags | ForEach-Object { $_.name }) -join ", "
-            ESRB_Rating       = $_?.esrb_rating?.name
-            Metacritic        = $_.metacritic
-            Suggestions_Count = $_.suggestions_count
+            ID                = $game.id
+            Name              = $game.name
+            Released          = $game.released
+            Playtime          = $game.playtime
+            Rating            = $game.rating
+            Rating_top        = $game.rating_top
+            Ratings_count     = $game.ratings_count
+            Reviews_count     = $game.reviews_count
+            Added             = $game.added
+            Status_yet        = $status_yet
+            Status_owned      = $status_owned
+            Status_beaten     = $status_beaten
+            Status_toplay     = $status_toplay
+            Status_dropped    = $status_dropped
+            Status_playing    = $status_playing
+            Genres            = $genres -join ", "
+            Tags              = $tags -join ", "
+            ESRB_Rating       = $esrb_rating
+            Metacritic        = $game.metacritic
+            Suggestions_Count = $game.suggestions_count
         }
     }
 }
@@ -65,11 +81,17 @@ function Get-FieldSelection {
         7  = "Ratings_count"
         8  = "Reviews_count"
         9  = "Added"
-        10 = "Genres"
-        11 = "Tags"
-        12 = "ESRB_Rating"
-        13 = "Metacritic"
-        14 = "Suggestions_Count"
+        10 = "Status_yet"
+        11 = "Status_owned"
+        12 = "Status_beaten"
+        13 = "Status_toplay"
+        14 = "Status_dropped"
+        15 = "Status_playing"
+        16 = "Genres"
+        17 = "Tags"
+        18 = "ESRB_Rating"
+        19 = "Metacritic"
+        20 = "Suggestions_Count"
     }
 
     # Toon velden in tabelvorm
