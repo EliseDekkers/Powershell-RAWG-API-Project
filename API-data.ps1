@@ -1,11 +1,11 @@
-# API-instellingen
-$rawgKey = "66d6d395fad240b7805b15fca5779ffe"  # Zet hier je eigen API-sleutel in
+$rawgKey = "66d6d395fad240b7805b15fca5779ffe"  
 $allResults = @()  # Array om alle resultaten op te slaan
 $page = 1  # Begin bij pagina 1
+$maxPages = 10  # Maximaal aantal pagina's
 $moreResults = $true  # Vlag om te controleren of er meer resultaten zijn
 
-# Loop door de pagina's totdat er geen meer resultaten zijn
-while ($moreResults) {
+# Loop door de pagina's totdat we 10 pagina's hebben opgehaald of geen meer resultaten zijn
+while ($moreResults -and $page -le $maxPages) {
     # Maak de API-aanroep met de huidige pagina
     $url = "https://api.rawg.io/api/games?token&key=$rawgKey&page=$page"
     $response = Invoke-RestMethod -Uri $url -Headers @{ "X-Api-Key" = $rawgKey }
@@ -30,4 +30,3 @@ Write-Host "Totaal aantal verzamelde games: $($allResults.Count)"
 
 # Optioneel: toon de resultaten in Out-GridView voor visualisatie
 $allResults | Out-GridView
-
