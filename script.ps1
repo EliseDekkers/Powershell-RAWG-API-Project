@@ -36,18 +36,34 @@ function Expand-GameData {
     # Breid de gegevens in $allResults uit
     $allResults | ForEach-Object {
         $game=$_
+        $status_yet=$allResults.added_by_status | ForEach-Object { $_.yet }
+        $status_owned=$allResults.added_by_status | ForEach-Object { $_.owned }
+        $status_beaten=$allResults.added_by_status | ForEach-Object { $_.beaten }
+        $status_toplay=$allResults.added_by_status | ForEach-Object { $_.toplay }
+        $status_dropped=$allResults.added_by_status | ForEach-Object { $_.dropped }
+        $status_playing=$allResults.added_by_status | ForEach-Object { $_.playing }
+        $genres=$allResults.genres | ForEach-Object { $_.name }
         $tags=$allResults.tags | ForEach-Object { $_.name }
-        $platforms=$allResults.platforms | ForEach-Object { $_.name }
+        $esrb_rating=$allResults.esrb_rating | ForEach-Object { $_.name }
         [PSCustomObject]@{
             ID                = $game.id
             Name              = $game.name
             Released          = $game.released
             Playtime          = $game.playtime
             Rating            = $game.rating
-            RatingTop         = $game.ratingtop
-            Tags              = $tags
-            ESRB_Rating       = $game.esrb_rating
-            Platforms         = $platforms
+            Rating_top        = $game.rating_top
+            Ratings_count     = $game.ratings_count
+            Reviews_count     = $game.reviews_count
+            Added             = $game.added
+            Status_yet        = $status_yet
+            Status_owned      = $status_owned
+            Status_beaten     = $status_beaten
+            Status_toplay     = $status_toplay
+            Status_dropped    = $status_dropped
+            Status_playing    = $status_playing
+            genres            = $genres -join ", "
+            Tags              = $tags -join ", "
+            ESRB_Rating       = $esrb_rating
             Metacritic        = $game.metacritic
             Suggestions_Count = $game.suggestions_count
         }
@@ -64,7 +80,7 @@ function Show-GamesView {
     $expandedGames = Expand-GameData
 
     # Vraag de gebruiker welke velden ze willen zien
-    $columns = Read-Host "Welke velden wil je zien? (bijv. id, name, released, rating, ratingtop, tags, esrb_rating, platforms, metacritic,suggestions_count)"
+    $columns = Read-Host "Welke velden wil je zien? (bijv. id, name, released, rating, rating_top, ratings_count, reviews_count, genres, tags, esrb_rating, metacritic,suggestions_count)"
 
     # Splits de kolomnamen en filter de gegevens
     $columnsArray = $columns.Split(",") | ForEach-Object { $_.Trim() }
