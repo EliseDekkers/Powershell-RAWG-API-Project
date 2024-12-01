@@ -6,18 +6,24 @@ $allResults = @()  # Array om alle resultaten op te slaan
 $page = 1  # Begin bij pagina 1
 $maxPages = 10  # Maximaal aantal pagina's
 $moreResults = $true  # Vlag om te controleren of er meer resultaten zijn
+$maxRecords = Read-Host "Voer het maximaal aantal gegevens in (maximaal 200)"
+
+if ([int]$maxRecords -gt 200) {
+    Write-Host "Maximaal aantal gegevens is 200. Het aantal wordt aangepast naar 200."
+    $maxRecords = 200
+}
 
 # Loop door de pagina's totdat we $maxPages pagina's hebben opgehaald of geen meer resultaten zijn
-while ($moreResults -and $page -le $maxPages) {
+while ($moreResults -and $page -le $maxPages -and $allResults.Count -lt $maxRecords) {
     # Maak de API-aanroep met de huidige pagina
-    $url = "https://api.rawg.io/api/games?token&key=$rawgKey&page=$page"
+    $url = "https://api.rawg.io/api/games?key=$rawgKey&page=$page"
     $response = Invoke-RestMethod -Uri $url
 
     # Voeg de resultaten van deze pagina toe aan de array
     $allResults += $response.results
 
     # Controleer of er meer resultaten zijn
-    if ($response.results.Count -lt 20) {
+    if ($response.results.Count -lt 20 -or $allResults.Count -ge $maxRecords) {
         $moreResults = $false  # Geen extra pagina's nodig
     } else {
         $page++  # Ga naar de volgende pagina
@@ -32,18 +38,18 @@ Write-Host "Totaal aantal verzamelde games: $($allResults.Count)"
 
 # Functie om geneste gegevens op te splitsen voor gebruik in tabel/grid
 function Expand-GameData {
-    # Breid de gegevens in $allResults uit
     $allResults | ForEach-Object {
-        $game=$_
-        $status_yet=$allResults.added_by_status | ForEach-Object { $_.yet }
-        $status_owned=$allResults.added_by_status | ForEach-Object { $_.owned }
-        $status_beaten=$allResults.added_by_status | ForEach-Object { $_.beaten }
-        $status_toplay=$allResults.added_by_status | ForEach-Object { $_.toplay }
-        $status_dropped=$allResults.added_by_status | ForEach-Object { $_.dropped }
-        $status_playing=$allResults.added_by_status | ForEach-Object { $_.playing }
-        $genres=$allResults.genres | ForEach-Object { $_.name }
-        $tags=$allResults.tags | ForEach-Object { $_.name }
-        $esrb_rating=$allResults.esrb_rating | ForEach-Object { $_.name }
+        $game = $_
+        $status_yet = $game.added_by_status.yet
+        $status_owned = $game.added_by_status.owned
+        $status_beaten = $game.added_by_status.beaten
+        $status_toplay = $game.added_by_status.toplay
+        $status_dropped = $game.added_by_status.dropped
+        $status_playing = $game.added_by_status.playing
+        $genres = $game.genres | ForEach-Object { $_.name }
+        $tags = $game.tags | ForEach-Object { $_.name }
+        $esrb_rating = if ($game.esrb_rating) { $game.esrb_rating.name } else { "N/A" }
+
         [PSCustomObject]@{
             ID                = $game.id
             Name              = $game.name
@@ -130,8 +136,7 @@ function Get-FieldSelection {
     return $selectedFields
 }
 
-
-# Functie voor interactieve tabel- of gridweergave
+# Functie voor interactieve tabel/gridweergave met sortering
 function Show-GamesView {
     param(
         [string]$viewType = "table"  # Kies: 'table' voor Format-Table of 'grid' voor Out-GridView
@@ -143,12 +148,33 @@ function Show-GamesView {
     # Vraag gebruiker om velden te selecteren
     $columns = Get-FieldSelection
 
+    # Vraag gebruiker om een veld te kiezen voor sortering
+    $sortField = Read-Host "Voer het veld in waarop je de gegevens wilt sorteren (bijvoorbeeld 'Rating')"
+
+    if ($expandedGames -and ($expandedGames | Get-Member -Name $sortField -MemberType NoteProperty)) {
+        $sortedGames = $expandedGames | Sort-Object -Property $sortField -Descending
+    } else {
+        Write-Host "Ongeldig veld voor sortering. Gegevens worden niet gesorteerd."
+        $sortedGames = $expandedGames
+    }
+
+    # Vraag de gebruiker hoeveel resultaten ze willen zien
+    $displayCount = Read-Host "Hoeveel resultaten wil je weergeven (max $maxRecords)?"
+
+    if ([int]$displayCount -gt $maxRecords) {
+        Write-Host "Aantal weergegeven resultaten wordt beperkt tot $maxRecords."
+        $displayCount = $maxRecords
+    }
+
+    # Beperk het aantal weergegeven resultaten
+    $sortedGames = $sortedGames | Select-Object -First $displayCount
+
     if ($viewType -eq "grid") {
         # Out-GridView weergeven
-        $expandedGames | Select-Object $columns | Out-GridView -Title "Games View"
+        $sortedGames | Select-Object $columns | Out-GridView -Title "Games View"
     } else {
         # Format-Table weergeven
-        $expandedGames | Select-Object $columns | Format-Table -AutoSize
+        $sortedGames | Select-Object $columns | Format-Table -AutoSize
     }
 }
 
