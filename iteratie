@@ -1,0 +1,62 @@
+# Toon velden in tabelvorm
+    Write-Host "`nBeschikbare velden:"
+    $fields.GetEnumerator() | Sort-Object Key | Format-Table -Property Key, Value -AutoSize
+
+    # Iteratief velden selecteren
+    $selectedFields = @()
+    while ($selectedFields.Count -lt 5) {
+        $input = Read-Host "Voer een nummer in om een veld toe te voegen (of type 'stop' om te stoppen)"
+
+        if ($input -eq "stop") {
+            break
+        }
+
+        # Controleer of de invoer geldig is
+        if ($fields.ContainsKey([int]$input)) {
+            $field = $fields[[int]$input]
+
+            if ($selectedFields -contains $field) {
+                Write-Host "Dit veld is al toegevoegd."
+            } else {
+                $selectedFields += $field
+                Write-Host "Veld '$field' toegevoegd."
+            }
+        } else {
+            Write-Host "Ongeldig nummer. Probeer opnieuw."
+        }
+    }
+
+    if ($selectedFields.Count -eq 0) {
+        Write-Host "Geen velden geselecteerd. Standaardveld 'Name' wordt gebruikt."
+        $selectedFields = @("Name")
+    }
+
+    return $selectedFields
+}
+
+# Functie voor interactieve tabel- of gridweergave
+function Show-GamesView {
+    param(
+        [string]$viewType = "table"  # Kies: 'table' voor Format-Table of 'grid' voor Out-GridView
+    )
+
+    # Geneste gegevens uitbreiden
+    $expandedGames = Expand-GameData
+
+    # Vraag gebruiker om velden te selecteren
+    $columns = Get-FieldSelection
+
+    if ($viewType -eq "grid") {
+        # Out-GridView weergeven
+        $expandedGames | Select-Object $columns | Out-GridView -Title "Games View"
+    } else {
+        # Format-Table weergeven
+        $expandedGames | Select-Object $columns | Format-Table -AutoSize
+    }
+}
+
+# Vraag de gebruiker welke weergave ze willen gebruiken
+$viewType = Read-Host "Wil je een tabel (table) of grid (grid) weergave?"
+
+# Roep de functie aan om de gegevens te tonen
+Show-GamesView -viewType $viewType
