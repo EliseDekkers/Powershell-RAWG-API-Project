@@ -1,0 +1,25 @@
+$graphData = $response.results | Where-Object { 
+    $_.released -ne $null -and $_.rating -ne $null 
+} | ForEach-Object {
+    # Probeer released om te zetten naar een jaargetal
+    try {
+        $year = (Get-Date $_.released).Year
+        if ($year -ge 1990 -and $year -le 2024) {  # Alleen jaartallen binnen het bereik opnemen
+            [PSCustomObject]@{
+                X = $year                                     # Releasedatum als jaar voor de X-as
+                Y = [int][math]::Round($_.rating * 10)        # Rating maal 10 voor de Y-as
+            }
+        }
+    } catch {
+        # Ongeldige releasedatum overslaan
+    }
+}
+
+# Filter lege records eruit
+$graphData = $graphData | Where-Object { $_ -ne $null }
+
+$datapoints = $graphData | ForEach-Object {
+    @($_.X, $_.Y)  # Maak een array van de X en Y waarden
+}
+
+Show-Graph -Datapoints $datapoints -GraphTitle "Rating vs Released Year" -XAxisTitle "Released Year" -YAxisTitle "Rating (x10)" -Type "Scatter"
