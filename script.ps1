@@ -1,4 +1,40 @@
-# Functie voor interactieve tabel/gridweergave met sortering
+# RAWG API Key
+$rawgKey = "66d6d395fad240b7805b15fca5779ffe"
+
+# Variabelen voor paginatie
+$allResults = @()  # Array om alle resultaten op te slaan
+$page = 1  # Begin bij pagina 1
+$maxPages = 10  # Maximaal aantal pagina's
+$moreResults = $true  # Vlag om te controleren of er meer resultaten zijn
+$maxRecords = Read-Host "Voer het maximaal aantal gegevens in (minimum 20 en maximaal 200)"
+
+if ([int]$maxRecords -gt 200) {
+    Write-Host "Maximaal aantal gegevens is 200. Het aantal wordt aangepast naar 200."
+    $maxRecords = 200
+}
+
+# Loop door de pagina's totdat we $maxPages pagina's hebben opgehaald of geen meer resultaten zijn
+while ($moreResults -and $page -le $maxPages -and $allResults.Count -lt $maxRecords) {
+    # Maak de API-aanroep met de huidige pagina
+    $url = "https://api.rawg.io/api/games?key=$rawgKey&page=$page"
+    $response = Invoke-RestMethod -Uri $url
+
+    # Voeg de resultaten van deze pagina toe aan de array
+    $allResults += $response.results
+
+    # Controleer of er meer resultaten zijn
+    if ($response.results.Count -lt 20 -or $allResults.Count -ge $maxRecords) {
+        $moreResults = $false  # Geen extra pagina's nodig
+    } else {
+        $page++  # Ga naar de volgende pagina
+    }
+
+    # Laat zien hoeveel resultaten we tot nu toe hebben verzameld
+    Write-Host "Aantal verzamelde games tot nu toe: $($allResults.Count)"
+}
+
+# Bekijk het totale aantal verzamelde resultaten
+Write-Host "Totaal aantal verzamelde games: $($allResults.Count)"# Functie voor interactieve tabel/gridweergave met sortering
 function Show-GamesView {
     param(
         [string]$viewType = "table"  # Kies: 'table' voor Format-Table of 'grid' voor Out-GridView
@@ -101,7 +137,7 @@ function Get-FieldSelection {
         13 = "Status_dropped"
         14 = "Status_playing"
         15 = "Genres"
-        16 = "Tags (Beperkt de leesbaarheid door de vele waardes in een tabel, hierdoor wordt de iteratie na deze selectie stopgezet)"
+        16 = "Tags"
         17 = "ESRB_Rating"
         18 = "Metacritic"
         19 = "Suggestions_Count"
@@ -124,13 +160,6 @@ function Get-FieldSelection {
 
         if ($fields.ContainsKey([int]$input)) {
             $field = $fields[[int]$input]
-
-            # Stop iteratie als "Tags" wordt geselecteerd
-            if ($field -eq "Tags") {
-                Write-Host "Tags geselecteerd. De iteratie wordt gestopt."
-                $selectedFields += $field
-                break
-            }
 
             # Voeg veld toe als het nog niet geselecteerd is
             if ($selectedFields -contains $field) {

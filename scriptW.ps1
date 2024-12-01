@@ -92,7 +92,7 @@ function Get-FieldSelection {
         13 = "Status_dropped"
         14 = "Status_playing"
         15 = "Genres"
-        16 = "Tags (Beperkt de leesbaarheid door de vele waardes in een tabel, hierdoor wordt de iteratie na deze selectie stopgezet)"
+        16 = "Tags (Beperkt de leesbaarheid door de vele waardes in een tabel)"
         17 = "ESRB_Rating"
         18 = "Metacritic"
         19 = "Suggestions_Count"
@@ -112,16 +112,6 @@ function Get-FieldSelection {
         if ($input -eq "stop") {
             break
         }
-
-        if ($field.ContainsKey([int]$input)) {
-            $field =$fields[[int]$input]
-
-            # Stop iteratie als "Tags" wordt geselecteerd
-            if ($field -eq "Tags") {
-                Write-Host "Tags geselecteerd. De iteratie wordt gestopt."
-                $selectedFields += $field
-                break
-            }
 
         # Controleer of de invoer geldig is
         if ($fields.ContainsKey([int]$input)) {
