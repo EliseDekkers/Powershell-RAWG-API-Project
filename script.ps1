@@ -171,11 +171,15 @@ function Get-FieldSelection {
             Write-Host "Alle velden worden weergegeven."
             return $fields.Values  # Geef alle velden terug voor grid
         }
+
+        # Beperk de keuze tot maximaal 19 velden
+        $selectedFields = @()
+        $selectedFields += $fields[$input]
+        return $selectedFields
     }
 
-    # Iteratief velden selecteren (alleen voor tabelweergave, tenzij voor grid ook)
+    # Iteratief velden selecteren (alleen voor tabelweergave)
     $selectedFields = @()
-    
     if ($viewType -eq "table") {
         while ($selectedFields.Count -lt 5) {
             $input = Read-Host "Voer een nummer in om een veld toe te voegen (of type 'stop' om te stoppen)"
@@ -201,4 +205,10 @@ function Get-FieldSelection {
     }
 
     if ($selectedFields.Count -eq 0) {
-       
+        $selectedFields = @("ID", "Name", "Released", "Playtime", "Rating")  # Standaard velden
+    }
+
+    return $selectedFields  # Retourneer de geselecteerde velden
+}
+
+Show-GamesView -viewType "table"  # Of verander "table" naar "grid" voor gridweergave
