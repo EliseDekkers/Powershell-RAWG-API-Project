@@ -139,14 +139,14 @@ function Get-FieldSelection {
         13 = "Status_dropped"
         14 = "Status_playing"
         15 = "Genres"
-        16 = "Tags"
-        17 = "ESRB_Rating"
-        18 = "Metacritic"
-        19 = "Suggestions_Count"
+        16 = "ESRB_Rating"
+        17 = "Metacritic"
+        18 = "Suggestions_Count"
     }
 
     # Voeg de optie 'Alle bovenstaande velden' alleen toe als grid gekozen is
     if ($viewType -eq "grid") {
+        $fields[19] = "Tags"
         $fields[20] = "Alle bovenstaande velden"
     }
 
