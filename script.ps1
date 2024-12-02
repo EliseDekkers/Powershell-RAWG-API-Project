@@ -16,7 +16,7 @@ if ([int]$maxRecords -gt 200) {
 # Loop door de pagina's totdat we $maxPages pagina's hebben opgehaald of geen meer resultaten zijn
 while ($moreResults -and $page -le $maxPages -and $allResults.Count -lt $maxRecords) {
     # Maak de API-aanroep met de huidige pagina
-    $url = "https://api.rawg.io/api/games?key=$rawgKey&page=$page"
+    $url = "https://api.rawg.io/api/games?token&key=$rawgKey&page=$page"
     $response = Invoke-RestMethod -Uri $url
 
     # Voeg de resultaten van deze pagina toe aan de array
