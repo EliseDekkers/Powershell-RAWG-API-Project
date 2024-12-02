@@ -169,8 +169,8 @@ function Get-FieldSelection {
             $field = $fields[[int]$input]
 
             if ([int]$input -eq 20) {
-                # Alle velden geselecteerd
-                $selectedFields = $fields.Values
+                # Alle velden geselecteerd, behalve "Alle bovenstaande velden"
+                $selectedFields = $fields.Values | Where-Object { $_ -ne "Alle bovenstaande velden" }
                 Write-Host "Optie 'Alle bovenstaande velden' geselecteerd. Iteratie beëindigd."
                 break
             }
