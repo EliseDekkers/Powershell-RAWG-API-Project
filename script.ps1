@@ -170,7 +170,7 @@ function Get-FieldSelection {
 
             if ([int]$input -eq 20) {
                 # Alle velden geselecteerd, behalve "Alle bovenstaande velden"
-                $selectedFields = $fields.Values | Where-Object { $_ -ne "Alle bovenstaande velden" }
+                $selectedFields = $fields.GetEnumerator() | Sort-Object Key | Where-Object { $_.Key -ne 20 } | ForEach-Object { $_.Value }
                 Write-Host "Optie 'Alle bovenstaande velden' geselecteerd. Iteratie beëindigd."
                 break
             }
