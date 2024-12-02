@@ -16,7 +16,7 @@ if ([int]$maxRecords -gt 200) {
 # Loop door de pagina's totdat we $maxPages pagina's hebben opgehaald of geen meer resultaten zijn
 while ($moreResults -and $page -le $maxPages -and $allResults.Count -lt $maxRecords) {
     # Maak de API-aanroep met de huidige pagina
-    $url = "https://api.rawg.io/api/games?key=$rawgKey&page=$page"
+    $url = "https://api.rawg.io/api/games?token&key=$rawgKey&page=$page"
     $response = Invoke-RestMethod -Uri $url
 
     # Voeg de resultaten van deze pagina toe aan de array
@@ -143,10 +143,16 @@ function Get-FieldSelection {
         13 = "Status_dropped"
         14 = "Status_playing"
         15 = "Genres"
-        16 = "Tags"
-        17 = "ESRB_Rating"
-        18 = "Metacritic"
-        19 = "Suggestions_Count"
+        16 = "ESRB_Rating"
+        17 = "Metacritic"
+        18 = "Suggestions_Count"
+    }
+
+    # Als het een gridweergave is, voeg dan de 'Tags' toe
+    if ($viewType -eq "grid") {
+        $fields.Add(19, "Tags")
+        # Voeg "Alle velden hierboven" toe als keuze 20 voor grid
+        $fields.Add(20, "Alle velden hierboven")
     }
 
     # Toon velden in tabelvorm
@@ -157,9 +163,6 @@ function Get-FieldSelection {
 
     # Controleer of het een gridweergave is
     if ($viewType -eq "grid") {
-        # Voeg "Alle velden hierboven" toe als keuze 20 voor grid
-        $fields.Add(20, "Alle velden hierboven")
-        
         # Vraag om de weergave, tabel of grid
         $input = Read-Host "Kies velden (of kies 20 voor alle velden):"
         
@@ -197,4 +200,5 @@ function Get-FieldSelection {
         }
     }
 
-    if ($selected
+    if ($selectedFields.Count -eq 0) {
+       
