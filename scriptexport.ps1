@@ -13,6 +13,11 @@ if ([int]$maxRecords -gt 200) {
     $maxRecords = 200
 }
 
+if ([int]$maxRecords -lt 20) {
+    Write-Host "Minimum aantal gegevens is 20. Het aantal wordt aangepast naar 20."
+    $maxRecords = 20
+}
+
 # Loop door de pagina's totdat we $maxPages pagina's hebben opgehaald of geen meer resultaten zijn
 while ($moreResults -and $page -le $maxPages -and $allResults.Count -lt $maxRecords) {
     # Maak de API-aanroep met de huidige pagina
@@ -58,15 +63,18 @@ function Show-GamesView {
         # Vraag de gebruiker of ze oplopend of aflopend willen sorteren
         $sortDirection = Read-Host "Wil je sorteren van laag naar hoog (L) of hoog naar laag (H)?"
         
+        # Validatie voor de sorteerrichting
+        while ($sortDirection -ne "L" -and $sortDirection -ne "H") {
+            Write-Host "Ongeldige sorteerrichting. Voer 'L' voor laag naar hoog of 'H' voor hoog naar laag in."
+            $sortDirection = Read-Host "Wil je sorteren van laag naar hoog (L) of hoog naar laag (H)?"
+        }
+
         if ($sortDirection -eq "L") {
             $sortedGames = $expandedGames | Sort-Object -Property $sortField
             Write-Host "Gegevens gesorteerd op '$sortField' van laag naar hoog."
         } elseif ($sortDirection -eq "H") {
             $sortedGames = $expandedGames | Sort-Object -Property $sortField -Descending
             Write-Host "Gegevens gesorteerd op '$sortField' van hoog naar laag."
-        } else {
-            Write-Host "Ongeldige sorteerrichting. Geen sortering toegepast."
-            $sortedGames = $expandedGames
         }
     } else {
         Write-Host "Ongeldig veld voor sortering. Gegevens worden niet gesorteerd."
