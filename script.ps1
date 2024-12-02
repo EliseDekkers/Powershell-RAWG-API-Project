@@ -83,6 +83,25 @@ function Show-GamesView {
     }
 }
 
+# Voeg na het sorteren de exportoptie toe
+$exportChoice = Read-Host "Wil je de gegevens exporteren naar CSV? (Ja/Nee)"
+if ($exportChoice -eq "Ja") {
+    $filePath = Read-Host "Voer het pad in waar je het CSV-bestand wilt opslaan (bijv. C:\path\to\file.csv)"
+    # Exporteer naar CSV
+    $sortedGames | Select-Object $columns | Export-Csv -Path $filePath -NoTypeInformation
+    Write-Host "De gegevens zijn succesvol geexporteerd naar CSV: $filePath"
+}
+
+# Voeg na het sorteren de exportoptie toe
+$exportChoice = Read-Host "Wil je de gegevens exporteren naar JSON? (Ja/Nee)"
+if ($exportChoice -eq "Ja") {
+    $filePath = Read-Host "Voer het pad in waar je het JSON-bestand wilt opslaan (bijv. C:\path\to\file.json)"
+    # Exporteer naar JSON
+    $sortedGames | Select-Object $columns | ConvertTo-Json -Depth 5 | Out-File -FilePath $filePath
+    Write-Host "De gegevens zijn succesvol geexporteerd naar JSON: $filePath"
+}
+
+
 # Functie om geneste gegevens op te splitsen voor gebruik in tabel/grid
 function Expand-GameData {
     $allResults | ForEach-Object {
@@ -204,7 +223,7 @@ if ($exportChoice -eq "Ja") {
     $filePath = Read-Host "Voer het pad in waar je het CSV-bestand wilt opslaan (bijv. C:\path\to\file.csv)"
     # Exporteer naar CSV
     $sortedGames | Select-Object $columns | Export-Csv -Path $filePath -NoTypeInformation
-    Write-Host "De gegevens zijn succesvol geëxporteerd naar CSV: $filePath"
+    Write-Host "De gegevens zijn succesvol geexporteerd naar CSV: $filePath"
 }
 
 # Voeg na het sorteren de exportoptie toe
@@ -213,5 +232,5 @@ if ($exportChoice -eq "Ja") {
     $filePath = Read-Host "Voer het pad in waar je het JSON-bestand wilt opslaan (bijv. C:\path\to\file.json)"
     # Exporteer naar JSON
     $sortedGames | Select-Object $columns | ConvertTo-Json -Depth 5 | Out-File -FilePath $filePath
-    Write-Host "De gegevens zijn succesvol geëxporteerd naar JSON: $filePath"
+    Write-Host "De gegevens zijn succesvol geexporteerd naar JSON: $filePath"
 }

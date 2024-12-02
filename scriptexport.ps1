@@ -161,6 +161,11 @@ function Get-FieldSelection {
         17 = "Metacritic"
         18 = "Suggestions_Count"
     }
+    # Voeg de optie 'Alle bovenstaande velden' alleen toe als grid gekozen is
+    if ($viewType -eq "grid") {
+        $fields[19] = "Tags"
+        $fields[20] = "Alle bovenstaande velden"
+    }
 
     # Toon velden in tabelvorm
     Write-Host "`nBeschikbare velden:"
@@ -180,6 +185,13 @@ function Get-FieldSelection {
         if ($fields.ContainsKey([int]$input)) {
             $field = $fields[[int]$input]
 
+            if ([int]$input -eq 20) {
+                # Alle velden geselecteerd, behalve "Alle bovenstaande velden"
+                $selectedFields = $fields.GetEnumerator() | Sort-Object Key | Where-Object { $_.Key -ne 20 } | ForEach-Object { $_.Value }
+                Write-Host "Optie 'Alle bovenstaande velden' geselecteerd. Iteratie beëindigd."
+                break
+            }
+
             if ($selectedFields -contains $field) {
                 Write-Host "Dit veld is al toegevoegd."
             } else {
@@ -190,7 +202,6 @@ function Get-FieldSelection {
             Write-Host "Ongeldig nummer. Probeer opnieuw."
         }
     }
-
     if ($selectedFields.Count -eq 0) {
         Write-Host "Geen velden geselecteerd. Standaardveld 'Name' wordt gebruikt."
         $selectedFields = @("Name")
