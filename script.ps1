@@ -16,7 +16,7 @@ if ([int]$maxRecords -gt 200) {
 # Loop door de pagina's totdat we $maxPages pagina's hebben opgehaald of geen meer resultaten zijn
 while ($moreResults -and $page -le $maxPages -and $allResults.Count -lt $maxRecords) {
     # Maak de API-aanroep met de huidige pagina
-    $url = "https://api.rawg.io/api/games?token&key=$rawgKey&page=$page"
+    $url = "https://api.rawg.io/api/games?key=$rawgKey&page=$page"
     $response = Invoke-RestMethod -Uri $url
 
     # Voeg de resultaten van deze pagina toe aan de array
@@ -34,7 +34,9 @@ while ($moreResults -and $page -le $maxPages -and $allResults.Count -lt $maxReco
 }
 
 # Bekijk het totale aantal verzamelde resultaten
-Write-Host "Totaal aantal verzamelde games: $($allResults.Count)"# Functie voor interactieve tabel/gridweergave met sortering
+Write-Host "Totaal aantal verzamelde games: $($allResults.Count)"
+
+# Functie voor interactieve tabel/gridweergave met sortering
 function Show-GamesView {
     param(
         [string]$viewType = "table"  # Kies: 'table' voor Format-Table of 'grid' voor Out-GridView
@@ -44,7 +46,7 @@ function Show-GamesView {
     $expandedGames = Expand-GameData
 
     # Vraag gebruiker om velden te selecteren
-    $columns = Get-FieldSelection
+    $columns = Get-FieldSelection -viewType $viewType
 
     # Vraag gebruiker om een veld te kiezen voor sortering
     $sortField = Read-Host "Voer het veld in waarop je de gegevens wilt sorteren (bijvoorbeeld 'Rating', of 'geen' om niet te sorteren)"
@@ -121,6 +123,10 @@ function Expand-GameData {
 
 # Functie om iteratief velden te selecteren
 function Get-FieldSelection {
+    param(
+        [string]$viewType  # Weergave (table of grid)
+    )
+    
     $fields = @{
         1  = "ID"
         2  = "Name"
@@ -130,7 +136,7 @@ function Get-FieldSelection {
         6  = "Ratings_count"
         7  = "Reviews_count"
         8  = "Added"
-        9 = "Status_yet"
+        9  = "Status_yet"
         10 = "Status_owned"
         11 = "Status_beaten"
         12 = "Status_toplay"
@@ -148,41 +154,47 @@ function Get-FieldSelection {
     $fields.GetEnumerator() | Sort-Object Key | ForEach-Object {
         Write-Host "$($_.Key)`t$($_.Value)"
     }
-    
-    # Iteratief velden selecteren
+
+    # Controleer of het een gridweergave is
+    if ($viewType -eq "grid") {
+        # Voeg "Alle velden hierboven" toe als keuze 20 voor grid
+        $fields.Add(20, "Alle velden hierboven")
+        
+        # Vraag om de weergave, tabel of grid
+        $input = Read-Host "Kies velden (of kies 20 voor alle velden):"
+        
+        # Stop iteratie als 20 wordt gekozen voor grid
+        if ($input -eq "20") {
+            Write-Host "Alle velden worden weergegeven."
+            return $fields.Values  # Geef alle velden terug voor grid
+        }
+    }
+
+    # Iteratief velden selecteren (alleen voor tabelweergave, tenzij voor grid ook)
     $selectedFields = @()
-    while ($selectedFields.Count -lt 5) {
-        $input = Read-Host "Voer een nummer in om een veld toe te voegen (of type 'stop' om te stoppen)"
-
-        if ($input -eq "stop") {
-            break
-        }
-
-        if ($fields.ContainsKey([int]$input)) {
-            $field = $fields[[int]$input]
-
-            # Voeg veld toe als het nog niet geselecteerd is
-            if ($selectedFields -contains $field) {
-                Write-Host "Dit veld is al toegevoegd."
-            } else {
-                $selectedFields += $field
-                Write-Host "Veld '$field' toegevoegd."
+    
+    if ($viewType -eq "table") {
+        while ($selectedFields.Count -lt 5) {
+            $input = Read-Host "Voer een nummer in om een veld toe te voegen (of type 'stop' om te stoppen)"
+            
+            if ($input -eq "stop") {
+                break
             }
-        } else {
-            Write-Host "Ongeldig nummer. Probeer opnieuw."
+            
+            if ($fields.ContainsKey([int]$input)) {
+                $field = $fields[[int]$input]
+                
+                # Voeg veld toe als het nog niet geselecteerd is
+                if ($selectedFields -contains $field) {
+                    Write-Host "Dit veld is al toegevoegd."
+                } else {
+                    $selectedFields += $field
+                    Write-Host "Veld '$field' toegevoegd."
+                }
+            } else {
+                Write-Host "Ongeldig nummer. Probeer opnieuw."
+            }
         }
     }
 
-    if ($selectedFields.Count -eq 0) {
-        Write-Host "Geen velden geselecteerd. Standaardveld 'Name' wordt gebruikt."
-        $selectedFields = @("Name")
-    }
-
-    return $selectedFields
-}
-
-# Vraag de gebruiker welke weergave ze willen gebruiken
-$viewType = Read-Host "Wil je een tabel (table) of grid (grid) weergave?"
-
-# Roep de functie aan om de gegevens te tonen
-Show-GamesView -viewType $viewType
+    if ($selected
