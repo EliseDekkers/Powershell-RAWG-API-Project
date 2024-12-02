@@ -46,7 +46,7 @@ function Show-GamesView {
     $expandedGames = Expand-GameData
 
     # Vraag gebruiker om velden te selecteren
-    $columns = Get-FieldSelection -viewType $viewType
+    $columns = Get-FieldSelection
 
     # Vraag gebruiker om een veld te kiezen voor sortering
     $sortField = Read-Host "Voer het veld in waarop je de gegevens wilt sorteren (bijvoorbeeld 'Rating', of 'geen' om niet te sorteren)"
@@ -123,10 +123,6 @@ function Expand-GameData {
 
 # Functie om iteratief velden te selecteren
 function Get-FieldSelection {
-    param(
-        [string]$viewType  # Weergave (table of grid)
-    )
-    
     $fields = @{
         1  = "ID"
         2  = "Name"
@@ -143,16 +139,10 @@ function Get-FieldSelection {
         13 = "Status_dropped"
         14 = "Status_playing"
         15 = "Genres"
-        16 = "ESRB_Rating"
-        17 = "Metacritic"
-        18 = "Suggestions_Count"
-    }
-
-    # Als het een gridweergave is, voeg dan de 'Tags' toe
-    if ($viewType -eq "grid") {
-        $fields.Add(19, "Tags")
-        # Voeg "Alle velden hierboven" toe als keuze 20 voor grid
-        $fields.Add(20, "Alle velden hierboven")
+        16 = "Tags"
+        17 = "ESRB_Rating"
+        18 = "Metacritic"
+        19 = "Suggestions_Count"
     }
 
     # Toon velden in tabelvorm
@@ -161,54 +151,46 @@ function Get-FieldSelection {
         Write-Host "$($_.Key)`t$($_.Value)"
     }
 
-    # Controleer of het een gridweergave is
-    if ($viewType -eq "grid") {
-        # Vraag om de weergave, tabel of grid
-        $input = Read-Host "Kies velden (of kies 20 voor alle velden):"
-        
-        # Stop iteratie als 20 wordt gekozen voor grid
-        if ($input -eq "20") {
-            Write-Host "Alle velden worden weergegeven."
-            return $fields.Values  # Geef alle velden terug voor grid
+    # Iteratief velden selecteren
+    $selectedFields = @()
+
+    while ($true) {
+        $input = Read-Host "Voer een nummer in om een veld toe te voegen (of type 'stop' om te stoppen)"
+
+        if ($input -eq "stop") {
+            break
         }
 
-        # Beperk de keuze tot maximaal 19 velden
-        $selectedFields = @()
-        $selectedFields += $fields[$input]
-        return $selectedFields
-    }
+        if ($fields.ContainsKey([int]$input)) {
+            $field = $fields[[int]$input]
 
-    # Iteratief velden selecteren (alleen voor tabelweergave)
-    $selectedFields = @()
-    if ($viewType -eq "table") {
-        while ($selectedFields.Count -lt 5) {
-            $input = Read-Host "Voer een nummer in om een veld toe te voegen (of type 'stop' om te stoppen)"
-            
-            if ($input -eq "stop") {
-                break
-            }
-            
-            if ($fields.ContainsKey([int]$input)) {
-                $field = $fields[[int]$input]
-                
-                # Voeg veld toe als het nog niet geselecteerd is
-                if ($selectedFields -contains $field) {
-                    Write-Host "Dit veld is al toegevoegd."
-                } else {
-                    $selectedFields += $field
-                    Write-Host "Veld '$field' toegevoegd."
-                }
+            # Voeg veld toe als het nog niet geselecteerd is
+            if ($selectedFields -contains $field) {
+                Write-Host "Dit veld is al toegevoegd."
             } else {
-                Write-Host "Ongeldig nummer. Probeer opnieuw."
+                $selectedFields += $field
+                Write-Host "Veld '$field' toegevoegd."
             }
+        } else {
+            Write-Host "Ongeldig nummer. Probeer opnieuw."
         }
     }
 
     if ($selectedFields.Count -eq 0) {
-        $selectedFields = @("ID", "Name", "Released", "Playtime", "Rating")  # Standaard velden
+        Write-Host "Geen velden geselecteerd. Standaardveld 'Name' wordt gebruikt."
+        $selectedFields = @("Name")
     }
 
-    return $selectedFields  # Retourneer de geselecteerde velden
+    # Vraag pas na selectie van velden om keuze voor tabel of grid
+    $viewType = Read-Host "Wil je de gegevens in een tabel (table) of grid (grid) weergave zien?"
+
+    return @{ "viewType" = $viewType; "fields" = $selectedFields }
 }
 
-Show-GamesView -viewType "table"  # Of verander "table" naar "grid" voor gridweergave
+# Verkrijg de velden en weergaveoptie van de gebruiker
+$selection = Get-FieldSelection
+$viewType = $selection.viewType
+$fields = $selection.fields
+
+# Toon de gegevens met de geselecteerde weergave en velden
+Show-GamesView -viewType $viewType
