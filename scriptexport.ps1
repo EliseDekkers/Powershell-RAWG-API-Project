@@ -249,5 +249,8 @@ function Export-DataToJSON {
 }
 
 # Vraag de gebruiker welke weergave (tabel of grid) ze willen gebruiken
-$viewType = Read-Host "Wil je de gegevens in een tabel (table) of grid (grid) weergave zien?"
+do {
+    $viewType = Read-Host "Wil je de gegevens in een tabel (table) of grid (grid) weergave zien?"
+} while ($viewType -ne "table" -and $viewType -ne "grid")
+
 Show-GamesView -viewType $viewType
