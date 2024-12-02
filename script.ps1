@@ -145,13 +145,21 @@ function Get-FieldSelection {
         19 = "Suggestions_Count"
     }
 
+    # Voeg de optie 'Alle bovenstaande velden' alleen toe als grid gekozen is
+    if ($viewType -eq "grid") {
+        $fields[20] = "Alle bovenstaande velden"
+    } else {
+        # Verwijder 'Tags' en 'Alle bovenstaande velden' als grid niet is gekozen
+        $fields.Remove(16)  # Tags
+        $fields.Remove(20)  # Alle bovenstaande velden
+    }
+
     # Toon velden in tabelvorm
     Write-Host "`nBeschikbare velden:"
     $fields.GetEnumerator() | Sort-Object Key | ForEach-Object {
         Write-Host "$($_.Key)`t$($_.Value)"
     }
 
-    # Iteratief velden selecteren
     $selectedFields = @()
 
     while ($true) {
@@ -164,7 +172,13 @@ function Get-FieldSelection {
         if ($fields.ContainsKey([int]$input)) {
             $field = $fields[[int]$input]
 
-            # Voeg veld toe als het nog niet geselecteerd is
+            if ([int]$input -eq 20) {
+                # Alle velden geselecteerd
+                $selectedFields = $fields.Values[0..18]  # Voeg alle velden toe behalve Tags (indien nodig)
+                Write-Host "Optie 'Alle bovenstaande velden' geselecteerd. Iteratie beëindigd."
+                break
+            }
+
             if ($selectedFields -contains $field) {
                 Write-Host "Dit veld is al toegevoegd."
             } else {
@@ -181,16 +195,9 @@ function Get-FieldSelection {
         $selectedFields = @("Name")
     }
 
-    # Vraag pas na selectie van velden om keuze voor tabel of grid
-    $viewType = Read-Host "Wil je de gegevens in een tabel (table) of grid (grid) weergave zien?"
-
-    return @{ "viewType" = $viewType; "fields" = $selectedFields }
+    return $selectedFields
 }
 
-# Verkrijg de velden en weergaveoptie van de gebruiker
-$selection = Get-FieldSelection
-$viewType = $selection.viewType
-$fields = $selection.fields
-
-# Toon de gegevens met de geselecteerde weergave en velden
+# Vraag de gebruiker welke weergave (tabel of grid) ze willen gebruiken
+$viewType = Read-Host "Wil je de gegevens in een tabel (table) of grid (grid) weergave zien?"
 Show-GamesView -viewType $viewType
