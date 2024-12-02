@@ -148,10 +148,6 @@ function Get-FieldSelection {
     # Voeg de optie 'Alle bovenstaande velden' alleen toe als grid gekozen is
     if ($viewType -eq "grid") {
         $fields[20] = "Alle bovenstaande velden"
-    } else {
-        # Verwijder 'Tags' en 'Alle bovenstaande velden' als grid niet is gekozen
-        $fields.Remove(16)  # Tags
-        $fields.Remove(20)  # Alle bovenstaande velden
     }
 
     # Toon velden in tabelvorm
@@ -174,7 +170,7 @@ function Get-FieldSelection {
 
             if ([int]$input -eq 20) {
                 # Alle velden geselecteerd
-                $selectedFields = $fields.Values[0..18]  # Voeg alle velden toe behalve Tags (indien nodig)
+                $selectedFields = $fields.Values
                 Write-Host "Optie 'Alle bovenstaande velden' geselecteerd. Iteratie beëindigd."
                 break
             }
