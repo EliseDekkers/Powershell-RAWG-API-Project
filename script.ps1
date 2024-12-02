@@ -6,11 +6,12 @@ $allResults = @()  # Array om alle resultaten op te slaan
 $page = 1  # Begin bij pagina 1
 $maxPages = 10  # Maximaal aantal pagina's
 $moreResults = $true  # Vlag om te controleren of er meer resultaten zijn
-$maxRecords = Read-Host "Voer het maximaal aantal gegevens in (minimum 20 en maximaal 200)"
 
-if ([int]$maxRecords -gt 200) {
-    Write-Host "Maximaal aantal gegevens is 200. Het aantal wordt aangepast naar 200."
-    $maxRecords = 200
+# Vraag het maximaal aantal gegevens
+$maxRecords = Read-Host "Voer het maximaal aantal gegevens in (minimum 20 en maximaal 200)"
+while ($maxRecords -notmatch '^\d+$' -or [int]$maxRecords -lt 20 -or [int]$maxRecords -gt 200) {
+    Write-Host "Ongeldige invoer. Voer een getal in tussen 20 en 200."
+    $maxRecords = Read-Host "Voer het maximaal aantal gegevens in (minimum 20 en maximaal 200)"
 }
 
 # Loop door de pagina's totdat we $maxPages pagina's hebben opgehaald of geen meer resultaten zijn
@@ -51,24 +52,41 @@ function Show-GamesView {
     # Vraag gebruiker om een veld te kiezen voor sortering
     $sortField = Read-Host "Voer het veld in waarop je de gegevens wilt sorteren (bijvoorbeeld 'Rating', of 'geen' om niet te sorteren)"
 
-    if ($sortField -eq "geen") {
-        Write-Host "Geen sortering toegepast."
-        $sortedGames = $expandedGames
-    } elseif ($expandedGames -and ($expandedGames | Get-Member -Name $sortField -MemberType NoteProperty)) {
-        # Controleer of het veld bestaat en voer sortering uit
-        $sortedGames = $expandedGames | Sort-Object -Property $sortField -Descending
-        Write-Host "Gegevens gesorteerd op '$sortField'."
+    # Validatie van sorteeroptie
+    while ($sortField -ne "geen" -and !($expandedGames | Get-Member -Name $sortField -MemberType NoteProperty)) {
+        Write-Host "Ongeldig veld. Voer een geldig veld in (bijvoorbeeld 'Rating')."
+        $sortField = Read-Host "Voer het veld in waarop je de gegevens wilt sorteren (bijvoorbeeld 'Rating', of 'geen' om niet te sorteren)"
+    }
+
+    if ($sortField -ne "geen") {
+        # Vraag de gebruiker om de sorteerrichting
+        $sortDirection = Read-Host "Wil je sorteren van laag naar hoog (L) of hoog naar laag (H)?"
+
+        while ($sortDirection -ne "L" -and $sortDirection -ne "H") {
+            Write-Host "Ongeldige sorteerrichting. Voer 'L' voor laag naar hoog of 'H' voor hoog naar laag in."
+            $sortDirection = Read-Host "Wil je sorteren van laag naar hoog (L) of hoog naar laag (H)?"
+        }
+    }
+
+    # Sorteren
+    if ($sortField -ne "geen") {
+        if ($sortDirection -eq "L") {
+            $sortedGames = $expandedGames | Sort-Object -Property $sortField
+            Write-Host "Gegevens gesorteerd op '$sortField' van laag naar hoog."
+        } elseif ($sortDirection -eq "H") {
+            $sortedGames = $expandedGames | Sort-Object -Property $sortField -Descending
+            Write-Host "Gegevens gesorteerd op '$sortField' van hoog naar laag."
+        }
     } else {
-        Write-Host "Ongeldig veld voor sortering. Gegevens worden niet gesorteerd."
         $sortedGames = $expandedGames
     }
 
     # Vraag de gebruiker hoeveel resultaten ze willen zien
     $displayCount = Read-Host "Hoeveel resultaten wil je weergeven (max $maxRecords)?"
 
-    if ([int]$displayCount -gt $maxRecords) {
-        Write-Host "Aantal weergegeven resultaten wordt beperkt tot $maxRecords."
-        $displayCount = $maxRecords
+    while ($displayCount -notmatch '^\d+$' -or [int]$displayCount -gt $maxRecords) {
+        Write-Host "Ongeldige invoer. Voer een getal in dat niet groter is dan $maxRecords."
+        $displayCount = Read-Host "Hoeveel resultaten wil je weergeven (max $maxRecords)?"
     }
 
     # Beperk het aantal weergegeven resultaten
@@ -81,26 +99,15 @@ function Show-GamesView {
         # Format-Table weergeven
         $sortedGames | Select-Object $columns | Format-Table -AutoSize
     }
-}
 
-# Voeg na het sorteren de exportoptie toe
-$exportChoice = Read-Host "Wil je de gegevens exporteren naar CSV? (Ja/Nee)"
-if ($exportChoice -eq "Ja") {
-    $filePath = Read-Host "Voer het pad in waar je het CSV-bestand wilt opslaan (bijv. C:\path\to\file.csv)"
-    # Exporteer naar CSV
-    $sortedGames | Select-Object $columns | Export-Csv -Path $filePath -NoTypeInformation
-    Write-Host "De gegevens zijn succesvol geexporteerd naar CSV: $filePath"
+    # Vraag de gebruiker of ze willen exporteren
+    $exportChoice = Read-Host "Wil je de gegevens exporteren naar CSV of JSON? (CSV/JSON/Nee)"
+    if ($exportChoice -eq "CSV") {
+        Export-DataToCSV $sortedGames $columns
+    } elseif ($exportChoice -eq "JSON") {
+        Export-DataToJSON $sortedGames $columns
+    }
 }
-
-# Voeg na het sorteren de exportoptie toe
-$exportChoice = Read-Host "Wil je de gegevens exporteren naar JSON? (Ja/Nee)"
-if ($exportChoice -eq "Ja") {
-    $filePath = Read-Host "Voer het pad in waar je het JSON-bestand wilt opslaan (bijv. C:\path\to\file.json)"
-    # Exporteer naar JSON
-    $sortedGames | Select-Object $columns | ConvertTo-Json -Depth 5 | Out-File -FilePath $filePath
-    Write-Host "De gegevens zijn succesvol geexporteerd naar JSON: $filePath"
-}
-
 
 # Functie om geneste gegevens op te splitsen voor gebruik in tabel/grid
 function Expand-GameData {
@@ -162,7 +169,6 @@ function Get-FieldSelection {
         17 = "Metacritic"
         18 = "Suggestions_Count"
     }
-
     # Voeg de optie 'Alle bovenstaande velden' alleen toe als grid gekozen is
     if ($viewType -eq "grid") {
         $fields[19] = "Tags"
@@ -184,27 +190,28 @@ function Get-FieldSelection {
             break
         }
 
-        if ($fields.ContainsKey([int]$input)) {
-            $field = $fields[[int]$input]
-
-            if ([int]$input -eq 20) {
-                # Alle velden geselecteerd, behalve "Alle bovenstaande velden"
-                $selectedFields = $fields.GetEnumerator() | Sort-Object Key | Where-Object { $_.Key -ne 20 } | ForEach-Object { $_.Value }
-                Write-Host "Optie 'Alle bovenstaande velden' geselecteerd. Iteratie beëindigd."
-                break
-            }
-
-            if ($selectedFields -contains $field) {
-                Write-Host "Dit veld is al toegevoegd."
-            } else {
-                $selectedFields += $field
-                Write-Host "Veld '$field' toegevoegd."
-            }
-        } else {
+        # Valideer of het nummer geldig is
+        while ($fields.ContainsKey([int]$input) -eq $false) {
             Write-Host "Ongeldig nummer. Probeer opnieuw."
+            $input = Read-Host "Voer een nummer in om een veld toe te voegen (of type 'stop' om te stoppen)"
+        }
+
+        $field = $fields[[int]$input]
+
+        if ([int]$input -eq 20) {
+            # Alle velden geselecteerd, behalve "Alle bovenstaande velden"
+            $selectedFields = $fields.GetEnumerator() | Sort-Object Key | Where-Object { $_.Key -ne 20 } | ForEach-Object { $_.Value }
+            Write-Host "Optie 'Alle bovenstaande velden' geselecteerd. Iteratie beëindigd."
+            break
+        }
+
+        if ($selectedFields -contains $field) {
+            Write-Host "Dit veld is al toegevoegd."
+        } else {
+            $selectedFields += $field
+            Write-Host "Veld '$field' toegevoegd."
         }
     }
-
     if ($selectedFields.Count -eq 0) {
         Write-Host "Geen velden geselecteerd. Standaardveld 'Name' wordt gebruikt."
         $selectedFields = @("Name")
@@ -213,24 +220,27 @@ function Get-FieldSelection {
     return $selectedFields
 }
 
-# Vraag de gebruiker welke weergave (tabel of grid) ze willen gebruiken
-$viewType = Read-Host "Wil je de gegevens in een tabel (table) of grid (grid) weergave zien?"
-Show-GamesView -viewType $viewType
-
-# Voeg na het sorteren de exportoptie toe
-$exportChoice = Read-Host "Wil je de gegevens exporteren naar CSV? (Ja/Nee)"
-if ($exportChoice -eq "Ja") {
-    $filePath = Read-Host "Voer het pad in waar je het CSV-bestand wilt opslaan (bijv. C:\path\to\file.csv)"
-    # Exporteer naar CSV
-    $sortedGames | Select-Object $columns | Export-Csv -Path $filePath -NoTypeInformation
-    Write-Host "De gegevens zijn succesvol geexporteerd naar CSV: $filePath"
+# Functie om te exporteren naar CSV
+function Export-DataToCSV {
+    param (
+        [array]$data,
+        [array]$columns
+    )
+    $filePath = Read-Host "Voer het bestandspad in voor export (bijvoorbeeld C:\export.csv)"
+    $data | Select-Object $columns | Export-Csv -Path $filePath -NoTypeInformation
+    Write-Host "Gegevens succesvol geëxporteerd naar $filePath"
 }
 
-# Voeg na het sorteren de exportoptie toe
-$exportChoice = Read-Host "Wil je de gegevens exporteren naar JSON? (Ja/Nee)"
-if ($exportChoice -eq "Ja") {
-    $filePath = Read-Host "Voer het pad in waar je het JSON-bestand wilt opslaan (bijv. C:\path\to\file.json)"
-    # Exporteer naar JSON
-    $sortedGames | Select-Object $columns | ConvertTo-Json -Depth 5 | Out-File -FilePath $filePath
-    Write-Host "De gegevens zijn succesvol geexporteerd naar JSON: $filePath"
+# Functie om te exporteren naar JSON
+function Export-DataToJSON {
+    param (
+        [array]$data,
+        [array]$columns
+    )
+    $filePath = Read-Host "Voer het bestandspad in voor export (bijvoorbeeld C:\export.json)"
+    $data | Select-Object $columns | ConvertTo-Json | Set-Content -Path $filePath
+    Write-Host "Gegevens succesvol geëxporteerd naar $filePath"
 }
+
+# Start de functie voor weergave
+Show-GamesView -viewType "table" # Of kies "grid" voor gridweergave
