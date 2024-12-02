@@ -150,9 +150,6 @@ function Get-FieldSelection {
     $fields.GetEnumerator() | Sort-Object Key | ForEach-Object {
         Write-Host "$($_.Key)`t$($_.Value)"
     }
-
-    # Vraag om de weergave, tabel of grid
-    $viewType = Read-Host "Wil je een tabel (table) of grid (grid) weergave?"
     
     # Iteratief velden selecteren
     $selectedFields = @()
