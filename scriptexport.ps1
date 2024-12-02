@@ -55,9 +55,19 @@ function Show-GamesView {
         Write-Host "Geen sortering toegepast."
         $sortedGames = $expandedGames
     } elseif ($expandedGames -and ($expandedGames | Get-Member -Name $sortField -MemberType NoteProperty)) {
-        # Controleer of het veld bestaat en voer sortering uit
-        $sortedGames = $expandedGames | Sort-Object -Property $sortField -Descending
-        Write-Host "Gegevens gesorteerd op '$sortField'."
+        # Vraag de gebruiker of ze oplopend of aflopend willen sorteren
+        $sortDirection = Read-Host "Wil je sorteren van laag naar hoog (L) of hoog naar laag (H)?"
+        
+        if ($sortDirection -eq "L") {
+            $sortedGames = $expandedGames | Sort-Object -Property $sortField
+            Write-Host "Gegevens gesorteerd op '$sortField' van laag naar hoog."
+        } elseif ($sortDirection -eq "H") {
+            $sortedGames = $expandedGames | Sort-Object -Property $sortField -Descending
+            Write-Host "Gegevens gesorteerd op '$sortField' van hoog naar laag."
+        } else {
+            Write-Host "Ongeldige sorteerrichting. Geen sortering toegepast."
+            $sortedGames = $expandedGames
+        }
     } else {
         Write-Host "Ongeldig veld voor sortering. Gegevens worden niet gesorteerd."
         $sortedGames = $expandedGames
