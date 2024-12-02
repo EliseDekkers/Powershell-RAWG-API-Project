@@ -56,7 +56,7 @@ function Show-GamesView {
     } elseif ($expandedGames -and ($expandedGames | Get-Member -Name $sortField -MemberType NoteProperty)) {
         # Vraag de gebruiker of ze oplopend of aflopend willen sorteren
         $sortDirection = Read-Host "Wil je sorteren van laag naar hoog (L) of hoog naar laag (H)?"
-
+        
         # Validatie voor de sorteerrichting
         while ($sortDirection -ne "L" -and $sortDirection -ne "H") {
             Write-Host "Ongeldige sorteerrichting. Voer 'L' voor laag naar hoog of 'H' voor hoog naar laag in."
@@ -171,9 +171,9 @@ function Get-FieldSelection {
     }
 
     # Toon velden in tabelvorm
-    Write-Host "`nBeschikbare velden:"
+    Write-Host "nBeschikbare velden:"
     $fields.GetEnumerator() | Sort-Object Key | ForEach-Object {
-        Write-Host "$($_.Key)`t$($_.Value)"
+        Write-Host "$($_.Key)t$($_.Value)"
     }
 
     $selectedFields = @()
@@ -189,41 +189,63 @@ function Get-FieldSelection {
             $field = $fields[[int]$input]
 
             if ([int]$input -eq 20) {
-                # Alle velden geselecteerd, behalve "Tags"
-                $selectedFields = $fields.Values
+                # Alle velden geselecteerd, behalve "Alle bovenstaande velden"
+                $selectedFields = $fields.GetEnumerator() | Sort-Object Key | Where-Object { $_.Key -ne 20 } | ForEach-Object { $_.Value }
+                Write-Host "Optie 'Alle bovenstaande velden' geselecteerd. Iteratie beëindigd."
                 break
             }
-            if ($selectedFields -notcontains $field) {
+
+            if ($selectedFields -contains $field) {
+                Write-Host "Dit veld is al toegevoegd."
+            } else {
                 $selectedFields += $field
+                Write-Host "Veld '$field' toegevoegd."
             }
         } else {
-            Write-Host "Ongeldige keuze, probeer het opnieuw."
+            Write-Host "Ongeldig nummer. Probeer opnieuw."
         }
+    }
+    if ($selectedFields.Count -eq 0) {
+        Write-Host "Geen velden geselecteerd. Standaardveld 'Name' wordt gebruikt."
+        $selectedFields = @("Name")
     }
 
     return $selectedFields
 }
 
-# Functie om de gegevens naar een CSV-bestand te exporteren
+# Functie voor exporteren naar CSV
 function Export-DataToCSV {
     param (
-        [array]$data,
-        [array]$columns
+        [Parameter(Mandatory=$true)]
+        [Array]$data,
+
+        [Parameter(Mandatory=$true)]
+        [Array]$columns
     )
 
-    $fileName = Read-Host "Voer de naam in voor het CSV-bestand (bijv. 'games.csv')"
-    $data | Select-Object $columns | Export-Csv -Path $fileName -NoTypeInformation
-    Write-Host "Gegevens geëxporteerd naar CSV-bestand: $fileName"
+    $filePath = Read-Host "Voer het pad in waar je het CSV-bestand wilt opslaan (bijv. C:\pad\naar\bestand.csv)"
+    $data | Select-Object $columns | Export-Csv -Path $filePath -NoTypeInformation
+    Write-Host "De gegevens zijn succesvol geëxporteerd naar CSV: $filePath"
 }
 
-# Functie om de gegevens naar een JSON-bestand te exporteren
+# Functie voor exporteren naar JSON
 function Export-DataToJSON {
     param (
-        [array]$data,
-        [array]$columns
+        [Parameter(Mandatory=$true)]
+        [Array]$data,
+
+        [Parameter(Mandatory=$true)]
+        [Array]$columns
     )
 
-    $fileName = Read-Host "Voer de naam in voor het JSON-bestand (bijv. 'games.json')"
-    $data | Select-Object $columns | ConvertTo-Json | Set-Content -Path $fileName
-    Write-Host "Gegevens geëxporteerd naar JSON-bestand: $fileName"
+    $filePath = Read-Host "Voer het pad in waar je het JSON-bestand wilt opslaan (bijv. C:\pad\naar\bestand.json)"
+    $data | Select-Object $columns | ConvertTo-Json -Depth 5 | Set-Content -Path $filePath
+    Write-Host "De gegevens zijn succesvol geëxporteerd naar JSON: $filePath"
 }
+
+# Vraag de gebruiker welke weergave (tabel of grid) ze willen gebruiken
+do {
+    $viewType = Read-Host "Wil je de gegevens in een tabel (table) of grid (grid) weergave zien?"
+} while ($viewType -ne "table" -and $viewType -ne "grid")
+
+Show-GamesView -viewType $viewType
