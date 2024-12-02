@@ -190,7 +190,7 @@ function Get-FieldSelection {
             break
         }
 
-        if ($fields.ContainsKey([int]$input)) {
+        if ($input -match '^\d+$' -and $fields.ContainsKey([int]$input)) {
             $field = $fields[[int]$input]
 
             if ([int]$input -eq 20) {

@@ -6,11 +6,17 @@ $allResults = @()  # Array om alle resultaten op te slaan
 $page = 1  # Begin bij pagina 1
 $maxPages = 10  # Maximaal aantal pagina's
 $moreResults = $true  # Vlag om te controleren of er meer resultaten zijn
+$maxRecords = Read-Host "Voer het maximaal aantal gegevens in (minimum 20 en maximaal 200)"
 
-# Validatie voor het maximaal aantal gegevens
-do {
-    $maxRecords = Read-Host "Voer het maximaal aantal gegevens in (minimum 20 en maximaal 200)"
-} while (-not ($maxRecords -match '^\d+$') -or [int]$maxRecords -lt 20 -or [int]$maxRecords -gt 200)
+if ([int]$maxRecords -gt 200) {
+    Write-Host "Maximaal aantal gegevens is 200. Het aantal wordt aangepast naar 200."
+    $maxRecords = 200
+}
+
+if ([int]$maxRecords -lt 20) {
+    Write-Host "Minimum aantal gegevens is 20. Het aantal wordt aangepast naar 20."
+    $maxRecords = 20
+}
 
 # Loop door de pagina's totdat we $maxPages pagina's hebben opgehaald of geen meer resultaten zijn
 while ($moreResults -and $page -le $maxPages -and $allResults.Count -lt $maxRecords) {
@@ -78,10 +84,9 @@ function Show-GamesView {
     # Vraag de gebruiker hoeveel resultaten ze willen zien
     $displayCount = Read-Host "Hoeveel resultaten wil je weergeven (max $maxRecords)?"
 
-    # Validatie voor het aantal weergegeven resultaten
-    while (-not ($displayCount -match '^\d+$') -or [int]$displayCount -lt 1 -or [int]$displayCount -gt $maxRecords) {
-        Write-Host "Ongeldig aantal. Voer een getal in tussen 1 en $maxRecords."
-        $displayCount = Read-Host "Hoeveel resultaten wil je weergeven (max $maxRecords)?"
+    if ([int]$displayCount -gt $maxRecords) {
+        Write-Host "Aantal weergegeven resultaten wordt beperkt tot $maxRecords."
+        $displayCount = $maxRecords
     }
 
     # Beperk het aantal weergegeven resultaten
@@ -171,9 +176,9 @@ function Get-FieldSelection {
     }
 
     # Toon velden in tabelvorm
-    Write-Host "nBeschikbare velden:"
+    Write-Host "`nBeschikbare velden:"
     $fields.GetEnumerator() | Sort-Object Key | ForEach-Object {
-        Write-Host "$($_.Key)t$($_.Value)"
+        Write-Host "$($_.Key)`t$($_.Value)"
     }
 
     $selectedFields = @()
@@ -185,7 +190,7 @@ function Get-FieldSelection {
             break
         }
 
-        if ($fields.ContainsKey([int]$input)) {
+        if ($input -match '^\d+$' -and $fields.ContainsKey([int]$input)) {
             $field = $fields[[int]$input]
 
             if ([int]$input -eq 20) {
