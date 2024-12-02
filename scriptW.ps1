@@ -1,3 +1,5 @@
+# Bekijk het totale aantal verzamelde resultaten
+Write-Host "Totaal aantal verzamelde games: $($allResults.Count)"
 # RAWG API Key
 $rawgKey = "66d6d395fad240b7805b15fca5779ffe"
 
@@ -16,7 +18,7 @@ if ([int]$maxRecords -gt 200) {
 # Loop door de pagina's totdat we $maxPages pagina's hebben opgehaald of geen meer resultaten zijn
 while ($moreResults -and $page -le $maxPages -and $allResults.Count -lt $maxRecords) {
     # Maak de API-aanroep met de huidige pagina
-    $url = "https://api.rawg.io/api/games?key=$rawgKey&page=$page"
+    $url = "https://api.rawg.io/api/games?token&key=$rawgKey&page=$page"
     $response = Invoke-RestMethod -Uri $url
 
     # Voeg de resultaten van deze pagina toe aan de array
@@ -35,6 +37,53 @@ while ($moreResults -and $page -le $maxPages -and $allResults.Count -lt $maxReco
 
 # Bekijk het totale aantal verzamelde resultaten
 Write-Host "Totaal aantal verzamelde games: $($allResults.Count)"
+
+# Functie voor interactieve tabel/gridweergave met sortering
+function Show-GamesView {
+    param(
+        [string]$viewType = "table"  # Kies: 'table' voor Format-Table of 'grid' voor Out-GridView
+    )
+
+    # Geneste gegevens uitbreiden
+    $expandedGames = Expand-GameData
+
+    # Vraag gebruiker om velden te selecteren
+    $columns = Get-FieldSelection
+
+    # Vraag gebruiker om een veld te kiezen voor sortering
+    $sortField = Read-Host "Voer het veld in waarop je de gegevens wilt sorteren (bijvoorbeeld 'Rating', of 'geen' om niet te sorteren)"
+
+    if ($sortField -eq "geen") {
+        Write-Host "Geen sortering toegepast."
+        $sortedGames = $expandedGames
+    } elseif ($expandedGames -and ($expandedGames | Get-Member -Name $sortField -MemberType NoteProperty)) {
+        # Controleer of het veld bestaat en voer sortering uit
+        $sortedGames = $expandedGames | Sort-Object -Property $sortField -Descending
+        Write-Host "Gegevens gesorteerd op '$sortField'."
+    } else {
+        Write-Host "Ongeldig veld voor sortering. Gegevens worden niet gesorteerd."
+        $sortedGames = $expandedGames
+    }
+
+    # Vraag de gebruiker hoeveel resultaten ze willen zien
+    $displayCount = Read-Host "Hoeveel resultaten wil je weergeven (max $maxRecords)?"
+
+    if ([int]$displayCount -gt $maxRecords) {
+        Write-Host "Aantal weergegeven resultaten wordt beperkt tot $maxRecords."
+        $displayCount = $maxRecords
+    }
+
+    # Beperk het aantal weergegeven resultaten
+    $sortedGames = $sortedGames | Select-Object -First $displayCount
+
+    if ($viewType -eq "grid") {
+        # Out-GridView weergeven
+        $sortedGames | Select-Object $columns | Out-GridView -Title "Games View"
+    } else {
+        # Format-Table weergeven
+        $sortedGames | Select-Object $columns | Format-Table -AutoSize
+    }
+}
 
 # Functie om geneste gegevens op te splitsen voor gebruik in tabel/grid
 function Expand-GameData {
@@ -85,14 +134,14 @@ function Get-FieldSelection {
         6  = "Ratings_count"
         7  = "Reviews_count"
         8  = "Added"
-        9 = "Status_yet"
+        9  = "Status_yet"
         10 = "Status_owned"
         11 = "Status_beaten"
         12 = "Status_toplay"
         13 = "Status_dropped"
         14 = "Status_playing"
         15 = "Genres"
-        16 = "Tags (Beperkt de leesbaarheid door de vele waardes in een tabel)"
+        16 = "Tags"
         17 = "ESRB_Rating"
         18 = "Metacritic"
         19 = "Suggestions_Count"
@@ -103,28 +152,58 @@ function Get-FieldSelection {
     $fields.GetEnumerator() | Sort-Object Key | ForEach-Object {
         Write-Host "$($_.Key)`t$($_.Value)"
     }
+
+    # Vraag om de weergave, tabel of grid
+    $viewType = Read-Host "Wil je een tabel (table) of grid (grid) weergave?"
     
     # Iteratief velden selecteren
     $selectedFields = @()
-    while ($selectedFields.Count -lt 5) {
-        $input = Read-Host "Voer een nummer in om een veld toe te voegen (of type 'stop' om te stoppen)"
-
-        if ($input -eq "stop") {
-            break
-        }
-
-        # Controleer of de invoer geldig is
-        if ($fields.ContainsKey([int]$input)) {
-            $field = $fields[[int]$input]
-
-            if ($selectedFields -contains $field) {
-                Write-Host "Dit veld is al toegevoegd."
-            } else {
-                $selectedFields += $field
-                Write-Host "Veld '$field' toegevoegd."
+    
+    # Verwijder de beperking op 5 velden als grid is gekozen
+    if ($viewType -eq "table") {
+        while ($selectedFields.Count -lt 5) {
+            $input = Read-Host "Voer een nummer in om een veld toe te voegen (of type 'stop' om te stoppen)"
+            
+            if ($input -eq "stop") {
+                break
             }
-        } else {
-            Write-Host "Ongeldig nummer. Probeer opnieuw."
+            
+            if ($fields.ContainsKey([int]$input)) {
+                $field = $fields[[int]$input]
+                
+                # Voeg veld toe als het nog niet geselecteerd is
+                if ($selectedFields -contains $field) {
+                    Write-Host "Dit veld is al toegevoegd."
+                } else {
+                    $selectedFields += $field
+                    Write-Host "Veld '$field' toegevoegd."
+                }
+            } else {
+                Write-Host "Ongeldig nummer. Probeer opnieuw."
+            }
+        }
+    } else {
+        # Als grid wordt gekozen, beperk het aantal velden niet
+        while ($true) {
+            $input = Read-Host "Voer een nummer in om een veld toe te voegen (of type 'stop' om te stoppen)"
+            
+            if ($input -eq "stop") {
+                break
+            }
+            
+            if ($fields.ContainsKey([int]$input)) {
+                $field = $fields[[int]$input]
+                
+                # Voeg veld toe als het nog niet geselecteerd is
+                if ($selectedFields -contains $field) {
+                    Write-Host "Dit veld is al toegevoegd."
+                } else {
+                    $selectedFields += $field
+                    Write-Host "Veld '$field' toegevoegd."
+                }
+            } else {
+                Write-Host "Ongeldig nummer. Probeer opnieuw."
+            }
         }
     }
 
@@ -136,50 +215,6 @@ function Get-FieldSelection {
     return $selectedFields
 }
 
-# Functie voor interactieve tabel/gridweergave met sortering
-function Show-GamesView {
-    param(
-        [string]$viewType = "table"  # Kies: 'table' voor Format-Table of 'grid' voor Out-GridView
-    )
-
-    # Geneste gegevens uitbreiden
-    $expandedGames = Expand-GameData
-
-    # Vraag gebruiker om velden te selecteren
-    $columns = Get-FieldSelection
-
-    # Vraag gebruiker om een veld te kiezen voor sortering
-    $sortField = Read-Host "Voer het veld in waarop je de gegevens wilt sorteren (bijvoorbeeld 'Rating')"
-
-    if ($expandedGames -and ($expandedGames | Get-Member -Name $sortField -MemberType NoteProperty)) {
-        $sortedGames = $expandedGames | Sort-Object -Property $sortField -Descending
-    } else {
-        Write-Host "Ongeldig veld voor sortering. Gegevens worden niet gesorteerd."
-        $sortedGames = $expandedGames
-    }
-
-    # Vraag de gebruiker hoeveel resultaten ze willen zien
-    $displayCount = Read-Host "Hoeveel resultaten wil je weergeven (max $maxRecords)?"
-
-    if ([int]$displayCount -gt $maxRecords) {
-        Write-Host "Aantal weergegeven resultaten wordt beperkt tot $maxRecords."
-        $displayCount = $maxRecords
-    }
-
-    # Beperk het aantal weergegeven resultaten
-    $sortedGames = $sortedGames | Select-Object -First $displayCount
-
-    if ($viewType -eq "grid") {
-        # Out-GridView weergeven
-        $sortedGames | Select-Object $columns | Out-GridView -Title "Games View"
-    } else {
-        # Format-Table weergeven
-        $sortedGames | Select-Object $columns | Format-Table -AutoSize
-    }
-}
-
-# Vraag de gebruiker welke weergave ze willen gebruiken
-$viewType = Read-Host "Wil je een tabel (table) of grid (grid) weergave?"
-
-# Roep de functie aan om de gegevens te tonen
+# Vraag de gebruiker welke weergave (tabel of grid) ze willen gebruiken
+$viewType = Read-Host "Wil je de gegevens in een tabel (table) of grid (grid) weergave zien?"
 Show-GamesView -viewType $viewType
