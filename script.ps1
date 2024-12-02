@@ -197,3 +197,21 @@ function Get-FieldSelection {
 # Vraag de gebruiker welke weergave (tabel of grid) ze willen gebruiken
 $viewType = Read-Host "Wil je de gegevens in een tabel (table) of grid (grid) weergave zien?"
 Show-GamesView -viewType $viewType
+
+# Voeg na het sorteren de exportoptie toe
+$exportChoice = Read-Host "Wil je de gegevens exporteren naar CSV? (Ja/Nee)"
+if ($exportChoice -eq "Ja") {
+    $filePath = Read-Host "Voer het pad in waar je het CSV-bestand wilt opslaan (bijv. C:\path\to\file.csv)"
+    # Exporteer naar CSV
+    $sortedGames | Select-Object $columns | Export-Csv -Path $filePath -NoTypeInformation
+    Write-Host "De gegevens zijn succesvol geëxporteerd naar CSV: $filePath"
+}
+
+# Voeg na het sorteren de exportoptie toe
+$exportChoice = Read-Host "Wil je de gegevens exporteren naar JSON? (Ja/Nee)"
+if ($exportChoice -eq "Ja") {
+    $filePath = Read-Host "Voer het pad in waar je het JSON-bestand wilt opslaan (bijv. C:\path\to\file.json)"
+    # Exporteer naar JSON
+    $sortedGames | Select-Object $columns | ConvertTo-Json -Depth 5 | Out-File -FilePath $filePath
+    Write-Host "De gegevens zijn succesvol geëxporteerd naar JSON: $filePath"
+}
