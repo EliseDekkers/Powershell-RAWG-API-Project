@@ -1,5 +1,5 @@
 # RAWG API Key
-$rawgKey = "66d6d395fad240b7805b15fca5779ffe"
+$rawgKey = Read-Host -Prompt "66d6d395fad240b7805b15fca5779ffe" -AsSecureString | ConvertFrom-SecureString
 
 # Variabelen voor paginatie
 $allResults = @()  # Array om alle resultaten op te slaan
@@ -22,7 +22,17 @@ if ([int]$maxRecords -lt 20) {
 while ($moreResults -and $page -le $maxPages -and $allResults.Count -lt $maxRecords) {
     # Maak de API-aanroep met de huidige pagina
     $url = "https://api.rawg.io/api/games?token&key=$rawgKey&page=$page"
-    $response = Invoke-RestMethod -Uri $url
+    #Foutafhandeling bij API-aanroep
+    try {
+    $response = Invoke-RestMethod -Uri $url -ErrorAction Stop
+    if (-not $response.results) {
+        Write-Host "Geen resultaten gevonden. Controleer je API-sleutel of parameters."
+        break
+    }
+} catch {
+    Write-Host "Fout bij het ophalen van gegevens: $($_.Exception.Message)"
+    exit
+}
 
     # Voeg de resultaten van deze pagina toe aan de array
     $allResults += $response.results
@@ -112,37 +122,26 @@ function Show-GamesView {
 # Functie om geneste gegevens op te splitsen voor gebruik in tabel/grid
 function Expand-GameData {
     $allResults | ForEach-Object {
-        $game = $_
-        $status_yet = $game.added_by_status.yet
-        $status_owned = $game.added_by_status.owned
-        $status_beaten = $game.added_by_status.beaten
-        $status_toplay = $game.added_by_status.toplay
-        $status_dropped = $game.added_by_status.dropped
-        $status_playing = $game.added_by_status.playing
-        $genres = $game.genres | ForEach-Object { $_.name }
-        $tags = $game.tags | ForEach-Object { $_.name }
-        $esrb_rating = if ($game.esrb_rating) { $game.esrb_rating.name } else { "N/A" }
-
         [PSCustomObject]@{
-            ID                = $game.id
-            Name              = $game.name
-            Released          = $game.released
-            Playtime          = $game.playtime
-            Rating            = $game.rating
-            Ratings_count     = $game.ratings_count
-            Reviews_count     = $game.reviews_count
-            Added             = $game.added
-            Status_yet        = $status_yet
-            Status_owned      = $status_owned
-            Status_beaten     = $status_beaten
-            Status_toplay     = $status_toplay
-            Status_dropped    = $status_dropped
-            Status_playing    = $status_playing
-            Genres            = $genres -join ", "
-            Tags              = $tags -join ", "
-            ESRB_Rating       = $esrb_rating
-            Metacritic        = $game.metacritic
-            Suggestions_Count = $game.suggestions_count
+            ID                = $_.id
+            Name              = $_.name
+            Released          = $_.released
+            Playtime          = $_.playtime
+            Rating            = $_.rating
+            Ratings_count     = $_.ratings_count
+            Reviews_count     = $_.reviews_count
+            Added             = $_.added
+            Status_yet        = $_.added_by_status.yet
+            Status_owned      = $_.added_by_status.owned
+            Status_beaten     = $_.added_by_status.beaten
+            Status_toplay     = $_.added_by_status.toplay
+            Status_dropped    = $_.added_by_status.dropped
+            Status_playing    = $_.added_by_status.playing
+            Genres            = ($_.genres | ForEach-Object { $_.name }) -join ", "
+            Tags              = ($_.tags | ForEach-Object { $_.name }) -join ", "
+            ESRB_Rating       = if ($_.esrb_rating -and $_.esrb_rating.name) { $_.esrb_rating.name } else { "N/A" }
+            Metacritic        = $_.metacritic
+            Suggestions_Count = $_.suggestions_count
         }
     }
 }
